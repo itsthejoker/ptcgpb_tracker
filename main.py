@@ -33,7 +33,7 @@ def setup_logging():
 def main():
     """Main application entry point"""
     logger = setup_logging()
-    logger.info("Starting Card Counter application")
+    logger.info("Starting PTCGP Card Tracker application")
     
     # Initialize data directory structure
     try:
@@ -50,12 +50,12 @@ def main():
     
     # Create Qt application
     app = QApplication(sys.argv)
-    app.setApplicationName("Card Counter")
+    app.setApplicationName("PTCGP Card Tracker")
     app.setOrganizationName("CardCounter")
     app.setOrganizationDomain("cardcounter.local")
     
     # Set application style
-    app.setStyle('Fusion')
+    # app.setStyle('Fusion')
     
     # Create and show main window
     try:

@@ -1,0 +1,10 @@
+.venv
+build/
+data/
+dist/
+examples/
+resources/card_imgs/
+*.zip
+*.db-shm
+*.db-wal
+*__pycache__*

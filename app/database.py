@@ -6,7 +6,6 @@ This module provides database access for the portable desktop application.
 """
 
 import sqlite3
-import os
 import threading
 from typing import List, Dict, Any, Optional
 import logging
@@ -21,6 +20,10 @@ class Database:
     screenshots, cards, and their relationships.
     """
     
+    # Class-level storage to track initialized databases
+    _initialized_paths = set()
+    _init_lock = threading.Lock()
+    
     def __init__(self, db_path: str = None):
         """
         Initialize the database
@@ -33,7 +36,12 @@ class Database:
             db_path = get_portable_path('data', 'cardcounter.db')
         
         self.db_path = db_path
-        self._initialize_database()
+        
+        # Only initialize the database once per path
+        with Database._init_lock:
+            if self.db_path not in Database._initialized_paths:
+                self._initialize_database()
+                Database._initialized_paths.add(self.db_path)
         
         # Thread-local storage for database connections
         # SQLite connections are thread-bound, so each thread must have its own connection
@@ -61,7 +69,7 @@ class Database:
                     timestamp TEXT,
                     original_filename TEXT,
                     clean_filename TEXT,
-                    device_account TEXT,
+                    account TEXT,
                     pack_type TEXT,
                     card_types TEXT,
                     card_counts TEXT,
@@ -84,9 +92,6 @@ class Database:
                     UNIQUE(card_name, card_set)
                 )
             ''')
-            
-            # Add rarity column to existing cards table if it doesn't exist
-            self._add_rarity_column_if_not_exists(conn)
             
             # Create index for faster searches (only for tables that exist)
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_screenshots_clean_filename ON screenshots(clean_filename)')
@@ -112,7 +117,6 @@ class Database:
             
             # Create index for screenshot_cards table
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_screenshot_cards ON screenshot_cards(screenshot_id, card_id)')
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_screenshots_pack_screenshot ON screenshots(pack_screenshot)')
             
             conn.commit()
             logger.info(f"Database initialized at {self.db_path}")
@@ -140,18 +144,32 @@ class Database:
             existing = cursor.fetchone()
             
             if existing:
-                return existing[0], False  # Return existing ID and False for is_new
+                screenshot_id = existing[0]
+                # Update metadata if it was missing or empty
+                cursor.execute('''
+                    UPDATE screenshots SET 
+                        pack_type = CASE WHEN pack_type = 'Unknown' OR pack_type = '' THEN ? ELSE pack_type END,
+                        card_types = CASE WHEN card_types = '' THEN ? ELSE card_types END,
+                        card_counts = CASE WHEN card_counts = '0' OR card_counts = '' OR card_counts IS NULL THEN ? ELSE card_counts END
+                    WHERE id = ?
+                ''', (data['PackType'], data['CardTypes'], data['CardCounts'], screenshot_id))
+                conn.commit()
+                return screenshot_id, False  # Return existing ID and False for is_new
+            
+            # Requirement: CleanFilename is the account name
+            # We prioritize CleanFilename for the account field
+            account = data.get('CleanFilename', data.get('Account', 'Default'))
             
             cursor.execute('''
                 INSERT INTO screenshots (
-                    timestamp, original_filename, clean_filename, device_account, 
+                    timestamp, original_filename, clean_filename, account,
                     pack_type, card_types, card_counts, pack_screenshot, shinedust
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 data['Timestamp'],
                 data['OriginalFilename'],
                 data['CleanFilename'],
-                data['DeviceAccount'],
+                account,
                 data['PackType'],
                 data['CardTypes'],
                 data['CardCounts'],
@@ -243,74 +261,80 @@ class Database:
             conn.commit()
         finally:
             self._return_connection()
-    
-    def update_card_rarity(self, card_name: str, card_set: str, rarity: str):
+
+    def check_screenshot_exists(self, filename: str, account: str = None) -> bool:
         """
-        Update the rarity for a specific card
+        Check if a screenshot with the given filename has already been processed.
+        If account is provided, checks for that specific account.
         
         Args:
-            card_name: Name of the card
-            card_set: Set the card belongs to
-            rarity: New rarity value
+            filename: Name of the screenshot file
+            account: Optional account name
             
         Returns:
-            bool: True if update was successful, False otherwise
+            bool: True if it exists and is processed, False otherwise
         """
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute('''
-                UPDATE cards 
-                SET rarity = ? 
-                WHERE card_name = ? AND card_set = ?
-            ''', (rarity, card_name, card_set))
-            conn.commit()
-            return cursor.rowcount > 0
+            if account:
+                cursor.execute('''
+                    SELECT processed FROM screenshots 
+                    WHERE (original_filename = ? OR pack_screenshot = ?) AND account = ?
+                ''', (filename, filename, account))
+            else:
+                cursor.execute('''
+                    SELECT processed FROM screenshots 
+                    WHERE original_filename = ? OR pack_screenshot = ?
+                ''', (filename, filename))
+                
+            results = cursor.fetchall()
+            # If any matching record is processed, we consider it processed
+            return any(row[0] == 1 for row in results)
+        except Exception as e:
+            logger.error(f"Error checking if screenshot exists: {e}")
+            return False
         finally:
             self._return_connection()
     
-    def update_all_cards_rarity(self):
+    def get_unprocessed_files(self, filenames: List[str]) -> List[str]:
         """
-        Update rarity information for all cards based on card names
+        Given a list of filenames, returns only those that are NOT already 
+        processed in the database.
         
+        Args:
+            filenames: List of filenames to check
+            
         Returns:
-            int: Number of cards updated
+            List[str]: List of filenames that are not processed
         """
-        try:
-            from names import cards as card_names
-        except ImportError:
-            logger.warning("names module not available, cannot update card rarities")
-            return 0
-        
+        if not filenames:
+            return []
+            
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
+            # Handle large batches by chunking to avoid SQLite limits
+            batch_size = 450 # SQLite limit is usually 999 parameters, we use 2x parameters
             
-            # Get all cards from database
-            cursor.execute('SELECT card_name, card_set FROM cards')
-            all_cards = cursor.fetchall()
+            all_processed = set()
+            for i in range(0, len(filenames), batch_size):
+                chunk = filenames[i:i+batch_size]
+                placeholders = ', '.join(['?'] * len(chunk))
+                query = f'''
+                    SELECT original_filename, pack_screenshot 
+                    FROM screenshots 
+                    WHERE processed = 1 AND (original_filename IN ({placeholders}) OR pack_screenshot IN ({placeholders}))
+                '''
+                cursor.execute(query, chunk + chunk)
+                for row in cursor.fetchall():
+                    if row[0]: all_processed.add(row[0])
+                    if row[1]: all_processed.add(row[1])
             
-            updated_count = 0
-            
-            for card_name, card_set in all_cards:
-                # Try to find the display name to extract rarity
-                # Handle both formats: "A2_84" and just "84"
-                mapping_key = f"{card_set}_{card_name}" if not card_name.startswith(f"{card_set}_") else card_name
-                
-                if mapping_key in card_names:
-                    display_name = card_names[mapping_key]
-                    rarity = self._extract_rarity_from_display_name(display_name)
-                    if rarity:
-                        cursor.execute('''
-                            UPDATE cards 
-                            SET rarity = ? 
-                            WHERE card_name = ? AND card_set = ?
-                        ''', (rarity, card_name, card_set))
-                        updated_count += 1
-            
-            conn.commit()
-            logger.info(f"Updated rarity for {updated_count} cards")
-            return updated_count
+            return [f for f in filenames if f not in all_processed]
+        except Exception as e:
+            logger.error(f"Error filtering unprocessed files: {e}")
+            return filenames
         finally:
             self._return_connection()
     
@@ -342,258 +366,12 @@ class Database:
         return conn
     
     def _return_connection(self):
-        """Close the connection for this thread"""
-        if hasattr(self.local_data, 'connection'):
-            conn = self.local_data.connection
-            
-            # Reset the thread-local connection
-            delattr(self.local_data, 'connection')
-            
-            # Close the connection since we're not using a pool anymore
-            try:
-                conn.close()
-            except:
-                pass
-    
-    def _add_rarity_column_if_not_exists(self, conn):
         """
-        Add rarity column to cards table if it doesn't exist
-        
-        Args:
-            conn: Database connection
+        No-op to allow for connection reuse within the same thread.
+        Connections are now kept in thread-local storage until explicitly closed.
         """
-        cursor = conn.cursor()
-        
-        # Check if rarity column exists
-        cursor.execute("PRAGMA table_info(cards)")
-        columns = [column[1] for column in cursor.fetchall()]
-        
-        if 'rarity' not in columns:
-            # Add the rarity column
-            cursor.execute("ALTER TABLE cards ADD COLUMN rarity TEXT")
-            logger.info("Added 'rarity' column to cards table")
-    
-    def _extract_rarity_from_display_name(self, display_name: str) -> str:
-        """
-        Extract rarity from card display name
-        
-        Args:
-            display_name: Card display name (e.g., "Card Name (3D)")
-            
-        Returns:
-            str: Rarity name or 'Unknown'
-        """
-        # Look for patterns like (1D), (2D), (3D), (4D), (1S), (2S), (3S)
-        import re
-        match = re.search(r'\(([0-9][A-Z])\)', display_name)
-        if match:
-            rarity_code = match.group(1)
-            
-            # Map rarity codes to human-readable names
-            rarity_map = {
-                '1D': 'Common',
-                '2D': 'Uncommon',
-                '3D': 'Rare',
-                '4D': 'Ultra Rare',
-                '1S': 'Common (Shiny)',
-                '2S': 'Uncommon (Shiny)',
-                '3S': 'Rare (Shiny)'
-            }
-            
-            return rarity_map.get(rarity_code, 'Unknown')
-        
-        return 'Unknown'
-    
-    def get_all_screenshots(self) -> List[Dict[str, Any]]:
-        """
-        Get all screenshots (both processed and unprocessed)
-        
-        Returns:
-            List[Dict]: List of screenshot records
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM screenshots')
-            
-            columns = [column[0] for column in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
-        finally:
-            self._return_connection()
-    
-    def get_unprocessed_screenshots(self) -> List[Dict[str, Any]]:
-        """
-        Get all unprocessed screenshots
-        
-        Returns:
-            List[Dict]: List of unprocessed screenshot records
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM screenshots WHERE processed = 0')
-            
-            columns = [column[0] for column in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
-        finally:
-            self._return_connection()
-    
-    def get_processed_screenshots_count(self) -> int:
-        """
-        Get count of processed screenshots
-        
-        Returns:
-            int: Count of processed screenshots
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('SELECT COUNT(*) FROM screenshots WHERE processed = 1')
-            return cursor.fetchone()[0]
-        finally:
-            self._return_connection()
-    
-    def get_total_screenshots_count(self) -> int:
-        """
-        Get total count of all screenshots
-        
-        Returns:
-            int: Total count of screenshots
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('SELECT COUNT(*) FROM screenshots')
-            return cursor.fetchone()[0]
-        finally:
-            self._return_connection()
-    
-    def search_cards(self, card_name: str) -> List[Dict[str, Any]]:
-        """
-        Search for screenshots containing a specific card by display name
-        
-        Args:
-            card_name: Card name to search for
-            
-        Returns:
-            List[Dict]: List of matching records
-        """
-        if not card_name:
-            return []
-        
-        # Import names module to get display name mappings
-        try:
-            import names
-            card_names = names.cards
-            set_names = names.sets
-        except ImportError:
-            # Fallback to raw card name search if names module not available
-            conn = self._get_connection()
-            try:
-                cursor = conn.cursor()
-                
-                query = '''
-                    SELECT s.clean_filename, c.card_name, c.card_set, sc.position, sc.confidence
-                    FROM screenshot_cards sc
-                    JOIN screenshots s ON sc.screenshot_id = s.id
-                    JOIN cards c ON sc.card_id = c.id
-                    WHERE c.card_name LIKE ?
-                    ORDER BY s.clean_filename, sc.position
-                '''
-                
-                cursor.execute(query, (f'%{card_name}%',))
-                
-                columns = [column[0] for column in cursor.description]
-                return [dict(zip(columns, row)) for row in cursor.fetchall()]
-            finally:
-                self._return_connection()
-        
-        # Find all cards whose display names match the search query (partial match)
-        matching_card_ids = []
-        
-        for raw_set in set_names.keys():
-            for raw_card, display_name in card_names.items():
-                if raw_card.startswith(f"{raw_set}_") and card_name.lower() in display_name.lower():
-                    # This card's display name matches the search query
-                    # We need to find the card_id for this card in the database
-                    # The card could be stored in either format:
-                    # Format 1: card_name = "84", card_set = "A3b"
-                    # Format 2: card_name = "A3b_84", card_set = "A3b"
-                    
-                    card_name_part = raw_card.split('_', 1)[1]
-                    
-                    # Search for both possible formats
-                    conn = self._get_connection()
-                    try:
-                        cursor = conn.cursor()
-                        
-                        # Try format 2 first (full format)
-                        cursor.execute('SELECT id FROM cards WHERE card_name = ? AND card_set = ?', 
-                                     (raw_card, raw_set))
-                        row = cursor.fetchone()
-                        if row:
-                            matching_card_ids.append(row[0])
-                            continue
-                        
-                        # Try format 1 (just the number)
-                        cursor.execute('SELECT id FROM cards WHERE card_name = ? AND card_set = ?', 
-                                     (card_name_part, raw_set))
-                        row = cursor.fetchone()
-                        if row:
-                            matching_card_ids.append(row[0])
-                    finally:
-                        self._return_connection()
-        
-        # If no matches found, return empty list
-        if not matching_card_ids:
-            return []
-        
-        # Now search for screenshots containing any of the matching cards
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            # Create a query with OR conditions for each matching card
-            placeholders = ','.join(['?'] * len(matching_card_ids))
-            
-            query = f'''
-                SELECT s.clean_filename, c.card_name, c.card_set, sc.position, sc.confidence
-                FROM screenshot_cards sc
-                JOIN screenshots s ON sc.screenshot_id = s.id
-                JOIN cards c ON sc.card_id = c.id
-                WHERE sc.card_id IN ({placeholders})
-                ORDER BY s.clean_filename, sc.position
-            '''
-            
-            cursor.execute(query, matching_card_ids)
-            
-            columns = [column[0] for column in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
-        finally:
-            self._return_connection()
-    
-    def get_screenshot_by_id(self, screenshot_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Get a screenshot by ID
-        
-        Args:
-            screenshot_id: ID of the screenshot
-            
-        Returns:
-            Dict: Screenshot record or None if not found
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM screenshots WHERE id = ?', (screenshot_id,))
-            
-            row = cursor.fetchone()
-            if row:
-                columns = [column[0] for column in cursor.description]
-                return dict(zip(columns, row))
-            return None
-        finally:
-            self._return_connection()
+        # Connection stays in self.local_data.connection for reuse
+        pass
     
     def get_all_cards(self) -> List[Dict[str, Any]]:
         """
@@ -612,68 +390,112 @@ class Database:
         finally:
             self._return_connection()
     
-    def get_all_cards_with_counts(self) -> List[tuple]:
+    def get_all_cards_with_counts(self, account: str = None) -> List[tuple]:
         """
-        Get all cards with their counts and account information
+        Get all cards with their counts, optionally filtered by account
         
+        Args:
+            account: Optional account name to filter by
+            
         Returns:
             List[tuple]: List of tuples containing (card_code, card_name, set_name, 
-                       rarity, total_count, account_count)
+                       rarity, total_count, image_path)
         """
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
             
-            # Query to get card counts and account information
-            query = '''
-                SELECT 
-                    c.card_code,
-                    c.card_name,
-                    c.set_name,
-                    c.rarity,
-                    COUNT(DISTINCT sc.card_id) as total_count,
-                    COUNT(DISTINCT s.account_id) as account_count
-                FROM cards c
-                LEFT JOIN screenshot_cards sc ON c.id = sc.card_id
-                LEFT JOIN screenshots s ON sc.screenshot_id = s.id
-                GROUP BY c.card_code, c.card_name, c.set_name, c.rarity
-                ORDER BY c.set_name, c.card_name
-            '''
+            # Query to get card counts
+            if account:
+                query = '''
+                    SELECT 
+                        c.card_name || '_' || c.card_set as card_code,
+                        c.card_name,
+                        c.card_set as set_name,
+                        c.rarity,
+                        COUNT(sc.id) as total_count,
+                        c.image_path
+                    FROM cards c
+                    LEFT JOIN screenshot_cards sc ON c.id = sc.card_id
+                    LEFT JOIN screenshots s ON sc.screenshot_id = s.id AND s.account = ?
+                    GROUP BY c.card_name, c.card_set, c.rarity, c.image_path
+                    ORDER BY c.card_set, c.card_name
+                '''
+                cursor.execute(query, (account,))
+            else:
+                query = '''
+                    SELECT 
+                        c.card_name || '_' || c.card_set as card_code,
+                        c.card_name,
+                        c.card_set as set_name,
+                        c.rarity,
+                        COUNT(sc.id) as total_count,
+                        c.image_path
+                    FROM cards c
+                    LEFT JOIN screenshot_cards sc ON c.id = sc.card_id
+                    GROUP BY c.card_name, c.card_set, c.rarity, c.image_path
+                    ORDER BY c.card_set, c.card_name
+                '''
+                cursor.execute(query)
             
-            cursor.execute(query)
             return cursor.fetchall()
         finally:
             self._return_connection()
     
-    def get_cards_by_screenshot(self, screenshot_id: int) -> List[Dict[str, Any]]:
+    def get_accounts_for_card(self, card_code: str) -> List[tuple]:
         """
-        Get all cards found in a specific screenshot
+        Get all accounts that have a specific card and their counts
         
         Args:
-            screenshot_id: ID of the screenshot
+            card_code: Card code in format NAME_SET
             
         Returns:
-            List[Dict]: List of card records found in the screenshot
+            List[tuple]: List of tuples containing (account_name, count)
         """
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
             
+            # Split card code into name and set
+            if '_' in card_code:
+                # Use rsplit to handle cases where card_name itself contains underscores (e.g., A1_1_A1)
+                name, set_name = card_code.rsplit('_', 1)
+            else:
+                name = card_code
+                set_name = ""
+                
             query = '''
-                SELECT c.card_name, c.card_set, sc.position, sc.confidence
-                FROM screenshot_cards sc
+                SELECT 
+                    s.account,
+                    COUNT(sc.id) as card_count
+                FROM screenshots s
+                JOIN screenshot_cards sc ON s.id = sc.screenshot_id
                 JOIN cards c ON sc.card_id = c.id
-                WHERE sc.screenshot_id = ?
-                ORDER BY sc.position
+                WHERE c.card_name = ? AND c.card_set = ?
+                GROUP BY s.account
+                ORDER BY card_count DESC, s.account ASC
             '''
             
-            cursor.execute(query, (screenshot_id,))
-            
-            columns = [column[0] for column in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            cursor.execute(query, (name, set_name))
+            return cursor.fetchall()
         finally:
             self._return_connection()
-    
+
+    def get_all_accounts(self) -> List[str]:
+        """
+        Get a list of all unique accounts in the database
+        
+        Returns:
+            List[str]: List of account names
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT DISTINCT account FROM screenshots ORDER BY account')
+            return [row[0] for row in cursor.fetchall() if row[0]]
+        finally:
+            self._return_connection()
+
     def get_total_cards_count(self) -> int:
         """
         Get total count of all cards found in screenshots
@@ -689,11 +511,167 @@ class Database:
         finally:
             self._return_connection()
     
+    def get_unique_cards_count(self) -> int:
+        """
+        Get count of unique cards (distinct card_name + card_set combinations)
+        
+        Returns:
+            int: Count of unique cards
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM (SELECT DISTINCT card_name, card_set FROM cards)')
+            return cursor.fetchone()[0]
+        finally:
+            self._return_connection()
+    
+    def get_total_packs_count(self) -> int:
+        """
+        Get total count of packs (screenshots)
+        
+        Returns:
+            int: Total count of packs
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM screenshots')
+            return cursor.fetchone()[0]
+        finally:
+            self._return_connection()
+    
+    def get_last_processed_timestamp(self) -> Optional[str]:
+        """
+        Get the timestamp of the last processed screenshot
+        
+        Returns:
+            str: Last processed timestamp, or None if no screenshots processed
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT timestamp FROM screenshots 
+                WHERE processed = 1 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+            ''')
+            result = cursor.fetchone()
+            return result[0] if result else None
+        finally:
+            self._return_connection()
+    
+    def get_recent_activity(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get recent activity (processed screenshots)
+        
+        Args:
+            limit: Maximum number of recent activities to return
+            
+        Returns:
+            List[Dict]: List of recent activities with timestamp and description
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT timestamp, pack_screenshot, pack_type, card_counts 
+                FROM screenshots 
+                WHERE processed = 1 
+                ORDER BY timestamp DESC 
+                LIMIT ?
+            ''', (limit,))
+            
+            activities = []
+            for row in cursor.fetchall():
+                timestamp, pack_screenshot, pack_type, card_counts = row
+                description = f"Processed {pack_type} pack: {card_counts} cards"
+                activities.append({
+                    'timestamp': timestamp,
+                    'description': description,
+                    'pack_screenshot': pack_screenshot
+                })
+            
+            return activities
+        finally:
+            self._return_connection()
+    
+    def advanced_search_cards(self, card_name: str = None, card_set: str = None, 
+                             rarity: str = None, pack_id: str = None) -> List[Dict[str, Any]]:
+        """
+        Advanced search for cards with multiple criteria
+        
+        Args:
+            card_name: Card name to search for (partial match)
+            card_set: Card set to filter by
+            rarity: Rarity to filter by
+            pack_id: Pack ID to filter by
+            
+        Returns:
+            List[Dict]: List of matching card records with screenshot information
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            
+            # Build query based on provided criteria
+            query = '''
+                SELECT DISTINCT 
+                    c.card_name, c.card_set, c.rarity, 
+                    s.pack_screenshot, s.pack_type, s.timestamp,
+                    c.image_path
+                FROM cards c
+                LEFT JOIN screenshot_cards sc ON c.id = sc.card_id
+                LEFT JOIN screenshots s ON sc.screenshot_id = s.id
+                WHERE 1=1
+            '''
+            
+            params = []
+            
+            # Add filters based on provided criteria
+            if card_name:
+                query += " AND c.card_name LIKE ?"
+                params.append(f"%{card_name}%")
+            
+            if card_set and card_set != "All Sets":
+                query += " AND c.card_set = ?"
+                params.append(card_set)
+            
+            if rarity and rarity != "All Rarities":
+                query += " AND c.rarity = ?"
+                params.append(rarity)
+            
+            if pack_id:
+                query += " AND s.pack_screenshot LIKE ?"
+                params.append(f"%{pack_id}%")
+            
+            query += " ORDER BY c.card_name, c.card_set, s.timestamp DESC"
+            
+            cursor.execute(query, params)
+            
+            results = []
+            for row in cursor.fetchall():
+                card_name, card_set, rarity, pack_screenshot, pack_type, timestamp, image_path = row
+                results.append({
+                    'card_name': card_name,
+                    'set_name': card_set,
+                    'rarity': rarity,
+                    'pack_id': pack_screenshot,
+                    'pack_type': pack_type,
+                    'timestamp': timestamp,
+                    'image_path': image_path
+                })
+            
+            return results
+        finally:
+            self._return_connection()
+    
     def close(self):
-        """Close the database connection for this thread"""
-        # Close any thread-local connections
+        """Close the database connection for the current thread"""
         if hasattr(self.local_data, 'connection'):
             try:
                 self.local_data.connection.close()
+                delattr(self.local_data, 'connection')
             except:
                 pass

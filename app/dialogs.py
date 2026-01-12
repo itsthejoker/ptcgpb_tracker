@@ -8,27 +8,59 @@ This module provides various dialog windows for user interactions.
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QFileDialog, QLineEdit, QComboBox, QCheckBox, QProgressBar,
-    QTextEdit, QFormLayout, QDialogButtonBox, QMessageBox
+    QTextEdit, QFormLayout, QDialogButtonBox, QMessageBox, QApplication,
+    QScrollArea, QTableWidget, QTableWidgetItem, QHeaderView
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QThread
-from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
+from PyQt6.QtGui import QIcon, QValidator, QPixmap
 import os
 import csv
 from typing import Optional, Dict, Any
 
+class IntValidator(QValidator):
+    """Custom integer validator for QLineEdit"""
+    
+    def __init__(self, min_val: int, max_val: int, parent=None):
+        super().__init__(parent)
+        self.min_val = min_val
+        self.max_val = max_val
+        
+    def validate(self, input_text: str, pos: int) -> tuple:
+        """Validate the input text"""
+        try:
+            val = int(input_text)
+            if self.min_val <= val <= self.max_val:
+                return (QValidator.State.Acceptable, input_text, pos)
+            else:
+                return (QValidator.State.Intermediate, input_text, pos)
+        except ValueError:
+            if input_text == "":
+                return (QValidator.State.Intermediate, input_text, pos)
+            else:
+                return (QValidator.State.Invalid, input_text, pos)
+
+
 class CSVImportDialog(QDialog):
     """Dialog for importing CSV files with pack metadata"""
     
-    csv_imported = pyqtSignal(str)  # Signal emitted when CSV is successfully imported
+    csv_imported = pyqtSignal(str)  # Signal emitted when CSV is successfully imported (file_path)
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, initial_path="", settings=None):
         super().__init__(parent)
         self.setWindowTitle("Import CSV")
         self.setMinimumSize(500, 400)
         
+        self._initial_path = initial_path
+        self._settings = settings
         self._setup_ui()
         self._csv_data = None
         self._file_path = ""
+        
+        # Auto-load if initial_path is a file
+        if self._initial_path and os.path.isfile(self._initial_path):
+            self._file_path = self._initial_path
+            self.file_path_label.setText(self._initial_path)
+            self._load_csv_preview(self._initial_path)
     
     def _setup_ui(self):
         """Set up the user interface"""
@@ -58,24 +90,7 @@ class CSVImportDialog(QDialog):
         main_layout.addWidget(self.preview_text)
         
         # Options section
-        options_layout = QFormLayout()
-        
-        # Account selection
-        self.account_combo = QComboBox()
-        self.account_combo.addItem("Default Account")
-        options_layout.addRow("Account:", self.account_combo)
-        
-        # Tradeable checkbox
-        self.tradeable_check = QCheckBox("Tradeable packs")
-        self.tradeable_check.setChecked(True)
-        options_layout.addRow(self.tradeable_check)
-        
-        # Pack size
-        self.pack_size_edit = QLineEdit("11")
-        self.pack_size_edit.setValidator(self.IntValidator(1, 100))
-        options_layout.addRow("Pack Size:", self.pack_size_edit)
-        
-        main_layout.addLayout(options_layout)
+        # Options can be added here in the future
         
         # Progress section
         self.progress_bar = QProgressBar()
@@ -102,7 +117,7 @@ class CSVImportDialog(QDialog):
     def _browse_file(self):
         """Open file dialog to select CSV file"""
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select CSV File", "", 
+            self, "Select CSV File", self._initial_path, 
             "CSV Files (*.csv);;All Files (*)"
         )
         
@@ -110,6 +125,10 @@ class CSVImportDialog(QDialog):
             self._file_path = file_path
             self.file_path_label.setText(file_path)
             self._load_csv_preview(file_path)
+            
+            # Save the path to settings
+            if self._settings:
+                self._settings.set_setting("csv_import_path", file_path)
     
     def _load_csv_preview(self, file_path: str):
         """Load and display preview of CSV file"""
@@ -134,21 +153,6 @@ class CSVImportDialog(QDialog):
     def _import_csv(self):
         """Import the CSV file"""
         try:
-            # Validate inputs
-            pack_size = int(self.pack_size_edit.text())
-            if pack_size < 1 or pack_size > 100:
-                QMessageBox.warning(self, "Invalid Input", "Pack size must be between 1 and 100")
-                return
-            
-            # Show progress
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setValue(0)
-            self.status_label.setText("Importing CSV...")
-            self.import_btn.setEnabled(False)
-            
-            # Process CSV data
-            self._process_csv_data()
-            
             # Emit signal and close
             self.csv_imported.emit(self._file_path)
             self.accept()
@@ -157,71 +161,33 @@ class CSVImportDialog(QDialog):
             QMessageBox.critical(self, "Import Error", f"Failed to import CSV: {e}")
             self.status_label.setText(f"Error: {e}")
             self.import_btn.setEnabled(True)
-            self.progress_bar.setVisible(False)
     
     def _process_csv_data(self):
         """Process CSV data and store in database"""
-        try:
-            # Parse CSV file
-            with open(self._file_path, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                
-                total_rows = 0
-                for row in reader:
-                    total_rows += 1
-                
-            # Simulate progress
-            self.progress_bar.setRange(0, total_rows)
-            
-            # For now, just simulate the import process
-            # In a real implementation, this would:
-            # 1. Parse the CSV data
-            # 2. Validate the data
-            # 3. Store in database
-            # 4. Update progress
-            
-            for i in range(total_rows):
-                if i % 10 == 0:  # Update progress every 10 rows
-                    self.progress_bar.setValue(i)
-                    QApplication.processEvents()
-            
-            self.progress_bar.setValue(total_rows)
-            self.status_label.setText(f"Successfully imported {total_rows} packs")
-            
-        except Exception as e:
-            raise Exception(f"Failed to process CSV data: {e}")
+        # This is now handled by the CSVImportWorker in the main window
+        pass
     
-    class IntValidator:
-        """Simple integer validator for QLineEdit"""
-        def __init__(self, min_val: int, max_val: int):
-            self.min_val = min_val
-            self.max_val = max_val
-            
-        def validate(self, input_text: str, pos: int) -> tuple:
-            try:
-                val = int(input_text)
-                if self.min_val <= val <= self.max_val:
-                    return (QValidator.State.Acceptable, input_text, pos)
-                else:
-                    return (QValidator.State.Intermediate, input_text, pos)
-            except ValueError:
-                if input_text == "":
-                    return (QValidator.State.Intermediate, input_text, pos)
-                else:
-                    return (QValidator.State.Invalid, input_text, pos)
 
 class ScreenshotProcessingDialog(QDialog):
     """Dialog for processing screenshot images"""
     
-    processing_started = pyqtSignal(str)  # Signal emitted when processing starts
+    processing_started = pyqtSignal(str, bool)  # Signal emitted when processing starts (directory_path, overwrite)
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, initial_dir="", settings=None):
         super().__init__(parent)
         self.setWindowTitle("Process Screenshots")
         self.setMinimumSize(500, 300)
         
+        self._initial_dir = initial_dir
+        self._settings = settings
         self._setup_ui()
         self._directory_path = ""
+        
+        # Auto-load if initial_dir is a directory
+        if self._initial_dir and os.path.isdir(self._initial_dir):
+            self._directory_path = self._initial_dir
+            self.dir_path_label.setText(self._initial_dir)
+            self._load_file_list(self._initial_dir)
     
     def _setup_ui(self):
         """Set up the user interface"""
@@ -243,11 +209,6 @@ class ScreenshotProcessingDialog(QDialog):
         
         # Options section
         options_layout = QFormLayout()
-        
-        # Account selection
-        self.account_combo = QComboBox()
-        self.account_combo.addItem("Default Account")
-        options_layout.addRow("Account:", self.account_combo)
         
         # Processing options
         self.overwrite_check = QCheckBox("Overwrite existing results")
@@ -290,13 +251,17 @@ class ScreenshotProcessingDialog(QDialog):
     def _browse_directory(self):
         """Open directory dialog to select screenshots directory"""
         dir_path = QFileDialog.getExistingDirectory(
-            self, "Select Screenshots Directory", ""
+            self, "Select Screenshots Directory", self._initial_dir
         )
         
         if dir_path:
             self._directory_path = dir_path
             self.dir_path_label.setText(dir_path)
             self._load_file_list(dir_path)
+            
+            # Save the directory to settings
+            if self._settings:
+                self._settings.set_setting("screenshots_dir", dir_path)
     
     def _load_file_list(self, dir_path: str):
         """Load and display list of image files in directory"""
@@ -330,58 +295,20 @@ class ScreenshotProcessingDialog(QDialog):
                 QMessageBox.warning(self, "Invalid Directory", "Selected directory does not exist")
                 return
             
-            # Show progress
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setValue(0)
-            self.status_label.setText("Processing screenshots...")
-            self.process_btn.setEnabled(False)
-            
-            # Process images
-            self._process_images()
-            
-            # Emit signal and close
-            self.processing_started.emit(self._directory_path)
+            # Emit signal with overwrite flag and close
+            overwrite_flag = self.overwrite_check.isChecked()
+            self.processing_started.emit(self._directory_path, overwrite_flag)
             self.accept()
             
         except Exception as e:
             QMessageBox.critical(self, "Processing Error", f"Failed to process screenshots: {e}")
             self.status_label.setText(f"Error: {e}")
             self.process_btn.setEnabled(True)
-            self.progress_bar.setVisible(False)
     
     def _process_images(self):
         """Process image files and extract card information"""
-        try:
-            # Get list of image files
-            image_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif')
-            image_files = []
-            
-            for filename in os.listdir(self._directory_path):
-                if filename.lower().endswith(image_extensions):
-                    image_files.append(filename)
-            
-            total_files = len(image_files)
-            self.progress_bar.setRange(0, total_files)
-            
-            # For now, just simulate the processing
-            # In a real implementation, this would:
-            # 1. Load each image
-            # 2. Process with OpenCV to detect cards
-            # 3. Store results in database
-            # 4. Update progress
-            
-            for i, filename in enumerate(image_files):
-                # Simulate processing
-                if i % 5 == 0:  # Update progress every 5 files
-                    self.progress_bar.setValue(i)
-                    self.status_label.setText(f"Processing {filename}... ({i+1}/{total_files})")
-                    QApplication.processEvents()
-            
-            self.progress_bar.setValue(total_files)
-            self.status_label.setText(f"Successfully processed {total_files} screenshots")
-            
-        except Exception as e:
-            raise Exception(f"Failed to process images: {e}")
+        # This is now handled by the ScreenshotProcessingWorker in the main window
+        pass
 
 class AboutDialog(QDialog):
     """About dialog for the application"""
@@ -427,3 +354,118 @@ class AboutDialog(QDialog):
         main_layout.addLayout(btn_layout)
         
         self.setLayout(main_layout)
+
+
+class CardImageDialog(QDialog):
+    """Dialog for displaying a full-size card image"""
+    
+    def __init__(self, image_path: str, card_name: str = "Card Image", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(card_name)
+        
+        # Load pixmap
+        pixmap = QPixmap(image_path)
+        if pixmap.isNull():
+            # If image failed to load, show an error and close
+            QMessageBox.critical(self, "Error", f"Could not load image: {image_path}")
+            # Use QTimer to close after the event loop starts if needed, 
+            # but reject() here might be fine if called after super().__init__
+            self.reject()
+            return
+            
+        # Set up UI
+        layout = QVBoxLayout()
+        
+        # Create scroll area for large images
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        
+        # Image label
+        self.image_label = QLabel()
+        self.image_label.setPixmap(pixmap)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        scroll_area.setWidget(self.image_label)
+        layout.addWidget(scroll_area)
+        
+        # Close button
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+        
+        # Adjust size based on image, but with a maximum
+        screen_size = QApplication.primaryScreen().availableSize()
+        max_width = int(screen_size.width() * 0.8)
+        max_height = int(screen_size.height() * 0.8)
+        
+        dialog_width = min(pixmap.width() + 40, max_width)
+        dialog_height = min(pixmap.height() + 100, max_height)
+        
+        self.resize(dialog_width, dialog_height)
+
+
+class AccountCardListDialog(QDialog):
+    """Dialog showing a filterable list of accounts that have a specific card"""
+    
+    def __init__(self, card_name: str, card_code: str, account_data: list, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Accounts owning {card_name}")
+        self.setMinimumSize(400, 500)
+        
+        self.card_name = card_name
+        self.card_code = card_code
+        self.all_data = account_data  # List of (account_name, count)
+        
+        self._setup_ui()
+        self._populate_table(self.all_data)
+    
+    def _setup_ui(self):
+        """Set up the user interface"""
+        layout = QVBoxLayout(self)
+        
+        # Header info
+        info_label = QLabel(f"Showing account distribution for: <b>{self.card_name}</b>")
+        layout.addWidget(info_label)
+        
+        # Search/Filter bar
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Filter:"))
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search account name...")
+        self.search_input.textChanged.connect(self._filter_data)
+        filter_layout.addWidget(self.search_input)
+        layout.addLayout(filter_layout)
+        
+        # Table
+        self.table = QTableWidget()
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Account Name", "Quantity"])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        layout.addWidget(self.table)
+        
+        # Close button
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+    
+    def _populate_table(self, data):
+        """Populate table with data"""
+        self.table.setRowCount(len(data))
+        for i, (account, count) in enumerate(data):
+            self.table.setItem(i, 0, QTableWidgetItem(str(account)))
+            count_item = QTableWidgetItem(str(count))
+            count_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(i, 1, count_item)
+            
+    def _filter_data(self, text):
+        """Filter table data based on search text"""
+        search_text = text.lower()
+        filtered_data = [
+            item for item in self.all_data 
+            if search_text in str(item[0]).lower()
+        ]
+        self._populate_table(filtered_data)
