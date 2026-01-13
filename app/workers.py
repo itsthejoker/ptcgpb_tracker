@@ -90,7 +90,7 @@ class CSVImportWorker(QRunnable):
                 elif "DeviceAccount" in row and row["DeviceAccount"]:
                     row["Account"] = row["DeviceAccount"]
                 elif "Account" not in row or not row["Account"]:
-                    row["Account"] = "Default"
+                    row["Account"] = "Account Unknown"
 
                 # Ensure all required fields exist to avoid KeyError in add_screenshot
                 required_fields = [
@@ -596,12 +596,12 @@ class ScreenshotProcessingWorker(QRunnable):
                 pack_type = self._extract_pack_type(filename)
 
             # Add screenshot record
-            # Use filename for both CleanFilename and Account for consistency
+            # Default to "Account Unknown" for screenshots without CSV info
             screenshot_data = {
                 "Timestamp": datetime.now().isoformat(),
                 "OriginalFilename": filename,
-                "CleanFilename": filename,
-                "Account": filename,
+                "CleanFilename": "Account Unknown",
+                "Account": "Account Unknown",
                 "PackType": pack_type,
                 "CardTypes": ", ".join([card["card_name"] for card in cards_found]),
                 "CardCounts": str(len(cards_found)),

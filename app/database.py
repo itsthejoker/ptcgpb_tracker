@@ -155,6 +155,12 @@ class Database:
         try:
             cursor = conn.cursor()
 
+            # Requirement: CleanFilename is the account name
+            # We prioritize CleanFilename for the account field
+            account = data.get("CleanFilename", data.get("Account", "Account Unknown"))
+            if not account or account == "Default":
+                account = "Account Unknown"
+
             # Check if this screenshot already exists
             cursor.execute(
                 "SELECT id FROM screenshots WHERE pack_screenshot = ?",
@@ -165,27 +171,28 @@ class Database:
             if existing:
                 screenshot_id = existing[0]
                 # Update metadata if it was missing or empty
+                # Also backfill account information if it was previously unknown
                 cursor.execute(
                     """
                     UPDATE screenshots SET 
                         pack_type = CASE WHEN pack_type = 'Unknown' OR pack_type = '' THEN ? ELSE pack_type END,
                         card_types = CASE WHEN card_types = '' THEN ? ELSE card_types END,
-                        card_counts = CASE WHEN card_counts = '0' OR card_counts = '' OR card_counts IS NULL THEN ? ELSE card_counts END
+                        card_counts = CASE WHEN card_counts = '0' OR card_counts = '' OR card_counts IS NULL THEN ? ELSE card_counts END,
+                        account = CASE WHEN account = 'Account Unknown' OR account = 'Default' OR account = '' OR account LIKE '%.png' OR account LIKE '%.jpg' THEN ? ELSE account END,
+                        clean_filename = CASE WHEN clean_filename = 'Account Unknown' OR clean_filename = 'Default' OR clean_filename = '' OR clean_filename LIKE '%.png' OR clean_filename LIKE '%.jpg' THEN ? ELSE clean_filename END
                     WHERE id = ?
                 """,
                     (
                         data["PackType"],
                         data["CardTypes"],
                         data["CardCounts"],
+                        account,
+                        data.get("CleanFilename", account),
                         screenshot_id,
                     ),
                 )
                 conn.commit()
                 return screenshot_id, False  # Return existing ID and False for is_new
-
-            # Requirement: CleanFilename is the account name
-            # We prioritize CleanFilename for the account field
-            account = data.get("CleanFilename", data.get("Account", "Default"))
 
             cursor.execute(
                 """
@@ -197,7 +204,7 @@ class Database:
                 (
                     data["Timestamp"],
                     data["OriginalFilename"],
-                    data["CleanFilename"],
+                    data.get("CleanFilename") or account,
                     account,
                     data["PackType"],
                     data["CardTypes"],
