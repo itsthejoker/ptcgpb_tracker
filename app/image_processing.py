@@ -357,14 +357,40 @@ class ImageProcessor:
                 int(round(h * scale_y)),
             )
 
-        # Top row positions (always 3 cards)
-        top_row_base = [
-            (0, 5, 75, 106),  # position 1
-            (81, 5, 75, 106),  # position 2
-            (164, 5, 75, 106),  # position 3
-        ]
+        # #e7f0f7 in grayscale ≈ 239
+        background_threshold = 235
 
-        top_row_positions = [scale_pos(p) for p in top_row_base]
+        # Detect layout: check if there are 2 or 3 cards on top row
+        det_top_x, det_top_y, det_top_w, det_top_h = scale_pos((0, 8, 30, 50))
+
+        if det_top_y + det_top_h <= height and det_top_x + det_top_w <= width:
+            detection_region_top = screenshot[
+                det_top_y : det_top_y + det_top_h, det_top_x : det_top_x + det_top_w
+            ]
+            avg_color_top = np.mean(detection_region_top)
+
+            if avg_color_top > background_threshold:
+                # 2 cards on top row
+                top_base = [
+                    (39, 5, 75, 106),  # position 1
+                    (124, 5, 75, 106),  # position 2
+                ]
+            else:
+                # 3 cards on top row
+                top_base = [
+                    (0, 5, 75, 106),  # position 1
+                    (81, 5, 75, 106),  # position 2
+                    (164, 5, 75, 106),  # position 3
+                ]
+        else:
+            # Fallback to 3-card layout
+            top_base = [
+                (0, 5, 75, 106),
+                (81, 5, 75, 106),
+                (164, 5, 75, 106),
+            ]
+
+        top_row_positions = [scale_pos(p) for p in top_base]
 
         # Detect layout: check if there are 2 or 3 cards on bottom row
         # Scale the detection rectangle: (x=0, y=124, w=30, h=50)
@@ -373,9 +399,6 @@ class ImageProcessor:
         if det_y + det_h <= height and det_x + det_w <= width:
             detection_region = screenshot[det_y : det_y + det_h, det_x : det_x + det_w]
             avg_color = np.mean(detection_region)
-
-            # #e7f0f7 in grayscale ≈ 239
-            background_threshold = 235
 
             if avg_color > background_threshold:
                 # 2 cards on bottom row
