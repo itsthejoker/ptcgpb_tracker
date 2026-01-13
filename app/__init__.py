@@ -8,6 +8,7 @@ card counter application.
 from .main_window import MainWindow
 from .database import Database
 from .image_processing import ImageProcessor
+from .utils import get_app_version
 
-__version__ = "1.0.0"
+__version__ = get_app_version()
 __author__ = "Card Counter Team"

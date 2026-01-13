@@ -30,6 +30,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
 from PyQt6.QtGui import QIcon, QValidator, QPixmap
 import os
 import csv
+from app.utils import get_app_version
 from typing import Optional, Dict, Any
 
 
@@ -351,7 +352,7 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("About Card Counter")
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(400, 100)
 
         self._setup_ui()
 
@@ -366,12 +367,14 @@ class AboutDialog(QDialog):
         main_layout.addWidget(icon_label)
 
         # Application info
+        version = get_app_version()
         info_label = QLabel(
-            """<h2>PTCGPB Companion</h2>
+            f"""<h2>PTCGPB Companion</h2>
                <p>Pokémon Card Identification Tool</p>
-               <p>Version 1.0.0</p>
+               <p>Version {version}</p>
                <p>© 2026 itsthejoker</p>
-               <p>Built with PyQt6 and OpenCV</p>"""
+               <p>MIT License & open source. Made with 🌯.<br><a href="https://github.com/itsthejoker/ptcgpb_companion">https://github.com/itsthejoker/ptcgpb-companion</a></p>
+               <p>Built with PyQt6 and OpenCV</p><p></p>"""
         )
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(info_label)

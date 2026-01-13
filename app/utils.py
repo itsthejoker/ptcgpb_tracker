@@ -11,6 +11,7 @@ Utility functions for the Card Counter application including:
 import sys
 import os
 import logging
+import tomllib
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QSettings
 
@@ -41,6 +42,25 @@ def get_portable_path(*parts):
             return os.path.join(base_path, "_internal", *parts)
 
     return os.path.join(base_path, *parts)
+
+
+def get_app_version():
+    """
+    Get the application version from pyproject.toml
+
+    Returns:
+        str: Version string
+    """
+    try:
+        pyproject_path = get_portable_path("pyproject.toml")
+        if os.path.exists(pyproject_path):
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+                return data.get("project", {}).get("version", "unknown")
+        return "unknown"
+    except Exception as e:
+        logger.error(f"Failed to load version from pyproject.toml: {e}")
+        return "unknown"
 
 
 def initialize_data_directory():
