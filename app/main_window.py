@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Set window properties
-        self.setWindowTitle("PTCGP Card Tracker")
+        self.setWindowTitle("PTCGPB Companion")
         self.setMinimumSize(800, 600)
 
         # Initialize settings
