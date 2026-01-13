@@ -25,13 +25,21 @@ def setup_logging():
 
     # Ensure log directory exists
     log_dir = os.path.dirname(log_file)
-    if not os.path.exists(log_dir):
+    try:
         os.makedirs(log_dir, exist_ok=True)
+        # Create the log file if it doesn't exist
+        if not os.path.exists(log_file):
+            with open(log_file, "a"):
+                pass
+        handlers = [logging.FileHandler(log_file), logging.StreamHandler()]
+    except Exception as e:
+        print(f"Warning: Could not initialize file logging at {log_file}: {e}", file=sys.stderr)
+        handlers = [logging.StreamHandler()]
 
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+        handlers=handlers,
     )
     return logging.getLogger(__name__)
 

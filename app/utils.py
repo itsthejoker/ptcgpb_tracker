@@ -33,6 +33,13 @@ def get_portable_path(*parts):
         base_path = os.path.dirname(os.path.abspath(__file__))
         # Go up one level to get to the root directory
         base_path = os.path.dirname(base_path)
+
+    # If the path starts with 'data', ensure it's in '_internal/data'
+    # unless base_path already points to '_internal'
+    if parts and parts[0] == "data":
+        if os.path.basename(base_path) != "_internal":
+            return os.path.join(base_path, "_internal", *parts)
+
     return os.path.join(base_path, *parts)
 
 
