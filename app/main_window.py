@@ -50,9 +50,11 @@ from app.workers import (
     ScreenshotProcessingWorker,
     CardDataLoadWorker,
     CardArtDownloadWorker,
+    VersionCheckWorker,
 )
-from PyQt6.QtCore import QThreadPool
-from app.utils import PortableSettings, get_portable_path
+from PyQt6.QtCore import QThreadPool, Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
+from app.utils import PortableSettings, get_portable_path, get_app_version
 
 
 class MainWindow(QMainWindow):
@@ -82,6 +84,10 @@ class MainWindow(QMainWindow):
         self._cards_load_generation = 0
         self._current_card_load_worker = None
 
+        # Version check state
+        self.new_version_available = False
+        self.latest_version_info = {}
+
         # Initialize UI components
         self._setup_status_bar()  # Initialize status bar early so it can be used by other setup methods
         self._setup_menu_bar()
@@ -92,6 +98,9 @@ class MainWindow(QMainWindow):
 
         # Load initial dashboard statistics
         self._update_dashboard_statistics()
+
+        # Check for updates
+        self._check_for_updates()
 
     def _start_art_download_if_needed(self):
         """Check for card art directory and start background download if missing"""
@@ -166,6 +175,33 @@ class MainWindow(QMainWindow):
 
         # Store active workers for cancellation
         self.active_workers = []
+
+    def _check_for_updates(self):
+        """Start background check for application updates"""
+        try:
+            current_version = get_app_version()
+            if current_version == "unknown":
+                return
+
+            worker = VersionCheckWorker(current_version)
+            worker.signals.result.connect(self._on_version_check_result)
+            self.thread_pool.start(worker)
+        except Exception as e:
+            logger.error(f"Failed to start version check: {e}")
+
+    def _on_version_check_result(self, result):
+        """Handle result from version check worker"""
+        if result and result.get("new_available"):
+            self.new_version_available = True
+            self.latest_version_info = result
+            # Refresh recent activity to show the update message
+            self._update_recent_activity()
+
+    def _on_recent_activity_item_clicked(self, item):
+        """Handle clicks on recent activity items"""
+        url = item.data(Qt.ItemDataRole.UserRole)
+        if url:
+            QDesktopServices.openUrl(QUrl(url))
 
     def _setup_menu_bar(self):
         """Set up the menu bar"""
@@ -284,6 +320,9 @@ class MainWindow(QMainWindow):
 
         self.recent_activity_list = QListWidget()
         self.recent_activity_list.setMinimumHeight(200)
+        self.recent_activity_list.itemClicked.connect(
+            self._on_recent_activity_item_clicked
+        )
         dashboard_layout.addWidget(self.recent_activity_list)
 
         dashboard_widget.setLayout(dashboard_layout)
@@ -368,13 +407,48 @@ class MainWindow(QMainWindow):
                     color = Qt.GlobalColor.blue if task["status"] == "Running" else Qt.GlobalColor.darkYellow
                     all_items.append({"text": item_text, "color": color})
 
+                # 4. Add update message if available
+                if getattr(self, "new_version_available", False):
+                    latest_version = self.latest_version_info.get(
+                        "latest_version", "unknown"
+                    )
+                    download_url = self.latest_version_info.get(
+                        "url",
+                        "https://github.com/itsthejoker/ptcgpb_companion/releases/latest",
+                    )
+
+                    update_text = f"✨ NEW UPDATE AVAILABLE: v{latest_version}! ✨\nDownload it from: {download_url}"
+                    all_items.append(
+                        {
+                            "text": update_text,
+                            "color": Qt.GlobalColor.red,
+                            "is_update": True,
+                            "url": download_url,
+                        }
+                    )
+
                 # Add all to list
                 for item_data in all_items:
                     self.recent_activity_list.addItem(item_data["text"])
-                    if item_data["color"]:
-                        last_item = self.recent_activity_list.item(
-                            self.recent_activity_list.count() - 1
-                        )
+                    last_item = self.recent_activity_list.item(
+                        self.recent_activity_list.count() - 1
+                    )
+
+                    if item_data.get("url"):
+                        last_item.setData(Qt.ItemDataRole.UserRole, item_data["url"])
+                        # Change cursor to pointing hand when hovering over this item
+                        # Note: QListWidget doesn't easily support per-item cursors without custom delegate,
+                        # but we can at least make it look more like a link.
+                        if item_data.get("is_update"):
+                            last_item.setToolTip("Click to open download page")
+
+                    if item_data.get("is_update"):
+                        font = last_item.font()
+                        font.setPointSize(12)
+                        font.setBold(True)
+                        last_item.setFont(font)
+
+                    if item_data.get("color"):
                         last_item.setForeground(item_data["color"])
 
                 if not all_items:

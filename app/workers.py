@@ -827,3 +827,49 @@ class CardDataLoadWorker(QRunnable):
             self.signals.error.emit(f"Card load failed: {e}")
         finally:
             self.signals.finished.emit()
+
+
+class VersionCheckWorker(QRunnable):
+    """Worker to check for application updates on GitHub"""
+
+    def __init__(self, current_version: str):
+        super().__init__()
+        self.current_version = current_version
+        self.signals = WorkerSignals()
+
+    def run(self):
+        """Check GitHub API for the latest release"""
+        try:
+            import httpx
+
+            # GitHub API for latest release
+            url = "https://api.github.com/repos/itsthejoker/ptcgpb_companion/releases/latest"
+            # Using a custom User-Agent as required by GitHub API
+            headers = {"User-Agent": "ptcgpb-companion-version-check"}
+
+            response = httpx.get(url, follow_redirects=True, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                latest_tag = data.get("tag_name", "")
+                latest_version = latest_tag.lstrip("v")
+
+                if latest_version and latest_version != self.current_version:
+                    # Basic comparison - if it's different, assume it's newer
+                    # as per the requirement for a simple check.
+                    self.signals.result.emit(
+                        {
+                            "new_available": True,
+                            "latest_version": latest_version,
+                            "url": "https://github.com/itsthejoker/ptcgpb_companion/releases/latest",
+                        }
+                    )
+                else:
+                    self.signals.result.emit({"new_available": False})
+            else:
+                logger.warning(f"GitHub API returned status code {response.status_code}")
+                self.signals.result.emit({"new_available": False})
+        except Exception as e:
+            logger.error(f"Error checking for updates: {e}")
+            self.signals.result.emit({"new_available": False})
+        finally:
+            self.signals.finished.emit()
