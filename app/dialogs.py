@@ -367,13 +367,11 @@ class AboutDialog(QDialog):
 
         # Application info
         info_label = QLabel(
-            """
-        <h2>Card Counter</h2>
-        <p>Pokémon Card Identification Tool</p>
-        <p>Version 1.0.0</p>
-        <p>© 2025 Card Counter Team</p>
-        <p>Built with PyQt6 and OpenCV</p>
-        """
+            """<h2>PTCGPB Companion</h2>
+               <p>Pokémon Card Identification Tool</p>
+               <p>Version 1.0.0</p>
+               <p>© 2026 itsthejoker</p>
+               <p>Built with PyQt6 and OpenCV</p>"""
         )
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(info_label)

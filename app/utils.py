@@ -79,7 +79,7 @@ def check_dependencies():
     Returns:
         bool: True if all dependencies are available, False otherwise
     """
-    required_modules = ["PyQt6", "cv2", "numpy", "pandas", "PIL"]
+    required_modules = ["PyQt6", "cv2", "numpy", "PIL"]
 
     missing = []
     for module in required_modules:

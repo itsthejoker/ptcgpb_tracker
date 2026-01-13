@@ -16,16 +16,13 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM Extract name and version from pyproject.toml using PowerShell (simple regex; no external deps)
-for /f "usebackq tokens=*" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$t = Get-Content -Raw 'pyproject.toml'; $name = [regex]::Match($t, '(?m)^^\s*name\s*=\s*\x22([^\x22]+)\x22'^).Groups[1].Value; $ver = [regex]::Match($t, '(?m)^^\s*version\s*=\s*\x22([^\x22]+)\x22'^).Groups[1].Value; Write-Output ^($name + '|' + $ver^)"`) do (
-  set "PYPROJECT=%%A"
-)
+REM Extract name and version from pyproject.toml
+for /f "tokens=2 delims==" %%I in ('findstr /r /c:"^name *=" pyproject.toml') do set "PROJECT_NAME=%%~I"
+for /f "tokens=2 delims==" %%I in ('findstr /r /c:"^version *=" pyproject.toml') do set "PROJECT_VERSION=%%~I"
 
-for /f "tokens=1,2 delims=|" %%i in ("%PYPROJECT%") do (
-  set "PROJECT_NAME=%%i"
-  set "PROJECT_VERSION=%%j"
-)
+REM Trim spaces and remove quotes
+if defined PROJECT_NAME for /f "tokens=*" %%I in ("%PROJECT_NAME%") do set "PROJECT_NAME=%%~I"
+if defined PROJECT_VERSION for /f "tokens=*" %%I in ("%PROJECT_VERSION%") do set "PROJECT_VERSION=%%~I"
 
 REM Allow overrides via environment
 if not defined APP_NAME set "APP_NAME=%PROJECT_NAME%"

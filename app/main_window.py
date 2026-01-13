@@ -1407,16 +1407,16 @@ class MainWindow(QMainWindow):
         # Check if cards are loaded first
         try:
             if hasattr(self, "db") and self.db:
-                unique_cards = self.db.get_unique_cards_count()
-                if unique_cards == 0:
+                total_packs = self.db.get_total_packs_count()
+                if total_packs == 0:
                     from PyQt6.QtWidgets import QMessageBox
                     QMessageBox.warning(
                         self,
-                        "Missing Card Database",
-                        "No cards found in database. Please import a CSV file first (File -> Import CSV) "
+                        "Missing Screenshot Data",
+                        "No screenshot records found in database. Please import a CSV file first (File -> Import CSV) "
                         "before processing screenshots."
                     )
-                    self._update_status_message("Aborted screenshot processing: No cards in database")
+                    self._update_status_message("Aborted screenshot processing: No screenshot records in database")
                     return
             else:
                 self._update_status_message("Database not available")
