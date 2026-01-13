@@ -29,9 +29,6 @@ jobs:
           python-version: '3.12'
           allow-prereleases: true
 
-      - name: manually install numpy
-        run: uv pip install --only-binary=numpy numpy==2.2.6
-
       - name: Run build-windows.bat
         run: .\build-windows.bat
         shell: cmd

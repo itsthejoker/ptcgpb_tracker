@@ -55,6 +55,9 @@ REM If you have an application icon, uncomment and adjust:
 REM set "PYI_OPTS=%PYI_OPTS% --icon resources\icons\app.ico"
 
 echo Running PyInstaller via uv run...
+uv venv
+uv pip install --only-binary=numpy numpy==2.2.6
+uv sync
 uv run --with pyinstaller pyinstaller %PYI_OPTS% "%ENTRYPOINT%"
 if errorlevel 1 (
   echo PyInstaller failed.
