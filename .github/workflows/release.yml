@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0). If empty, will use version from pyproject.toml'
+        required: false
+        default: ''
 
 jobs:
   build-and-release:
@@ -23,6 +28,26 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(grep -m 1 '^version = ' pyproject.toml | cut -d '"' -f 2)
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.get_version.outputs.TAG }} || echo "Tag already exists"
+          git push origin ${{ steps.get_version.outputs.TAG }} || echo "Tag already pushed"
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -35,8 +60,8 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: ${{ steps.get_version.outputs.TAG }}
           files: dist/*.zip
           generate_release_notes: true
           draft: false
