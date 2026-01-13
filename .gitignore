@@ -5,6 +5,7 @@ dist/
 examples/
 resources/card_imgs/
 *.zip
+*.db
 *.db-shm
 *.db-wal
 *__pycache__*
