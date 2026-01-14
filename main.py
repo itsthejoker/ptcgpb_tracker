@@ -9,6 +9,7 @@ It initializes the application, checks dependencies, and starts the main window.
 import sys
 import os
 import logging
+from PyQt6 import QtCore
 from PyQt6.QtWidgets import QApplication
 from PyQt6 import QtGui
 
@@ -67,7 +68,15 @@ def main():
     app.setApplicationName("PTCGP Card Tracker")
     app.setOrganizationName("CardCounter")
     app.setOrganizationDomain("cardcounter.local")
-    app.setWindowIcon(QtGui.QIcon('app/ptcgpb-companion-icon.ico'))
+
+    icon = QtGui.QIcon()
+
+    sizes = [16, 24, 32, 48, 64, 96, 128, 256, 512]
+
+    for size in sizes:
+        icon.addFile('app/ptcgpb-companion-icon.ico', QtCore.QSize(size, size))
+
+    app.setWindowIcon(icon)
 
     # Set application style
     app.setStyle('Fusion')
