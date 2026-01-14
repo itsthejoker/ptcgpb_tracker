@@ -77,7 +77,7 @@ def main():
     sizes = [16, 24, 32, 48, 64, 96, 128, 256, 512]
 
     for size in sizes:
-        icon.addFile(os.path.join(basedir, 'app/ptcgpb-companion-icon.ico'), QtCore.QSize(size, size))
+        icon.addFile(os.path.join(basedir, '_internal/ptcgpb-companion-icon.ico'), QtCore.QSize(size, size))
 
     app.setWindowIcon(icon)
 

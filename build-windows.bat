@@ -38,21 +38,13 @@ if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 
 REM Common PyInstaller options (Windows)
-set "PYI_OPTS=--noconfirm --clean --name %APP_NAME% --windowed --icon=app\ptcgpb-companion-icon.ico"
+set "PYI_OPTS=--noconfirm --clean --name %APP_NAME% --windowed"
 
-REM Data assets to include (src;dest within bundle on Windows)
-REM Example (uncomment and adjust as needed):
-REM   set "PYI_ADD_DATA=resources\card_imgs;resources\card_imgs"
-REM For multiple entries, separate by spaces:
-REM   set "PYI_ADD_DATA=resources\card_imgs;resources\card_imgs resources\icons;resources\icons"
-set "PYI_ADD_DATA=app\ptcgpb-companion-icon.ico;app\ptcgpb-companion-icon.ico"
-
-for %%D in (%PYI_ADD_DATA%) do (
-  set "PYI_OPTS=!PYI_OPTS! --add-data \"%%D\""
-)
+REM Copy the below line for each asset or folder that you wish to copy in.
+SET "PYI_OPTS=!PYI_OPTS! --add-data=_internal\ptcgpb-companion-icon.ico;."
 
 REM If you have an application icon, uncomment and adjust:
-REM set "PYI_OPTS=%PYI_OPTS% --icon resources\icons\app.ico"
+set "PYI_OPTS=%PYI_OPTS% --icon=_internal\ptcgpb-companion-icon.ico"
 
 echo Running PyInstaller via uv run...
 uv run --with pyinstaller pyinstaller %PYI_OPTS% "%ENTRYPOINT%"

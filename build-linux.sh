@@ -40,7 +40,7 @@ PYI_OPTS=(
   --clean
   --name "${APP_NAME}"
   --windowed
-  --icon=app\ptcgpb-companion-icon.ico
+  --icon=_internal\ptcgpb-companion-icon.ico
 )
 
 # Data assets to include (src:dest within bundle)
@@ -49,7 +49,7 @@ PYI_OPTS=(
 #  "resources/card_imgs:resources/card_imgs"
 #)
 ADD_DATA=(
-  "app/ptcgpb-companion-icon.ico:app/ptcgpb-companion-icon.ico",
+  "_internal/ptcgpb-companion-icon.ico:_internal/ptcgpb-companion-icon.ico",
 )
 
 for spec in "${ADD_DATA[@]}"; do
