@@ -17,7 +17,8 @@ from PyQt6 import QtGui
 # Add the app directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-basedir = os.path.dirname(__file__)
+# meipass is the _internal directory when the application is packaged with PyInstaller
+basedir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 
 from app.main_window import MainWindow
 from app.utils import check_dependencies, initialize_data_directory, get_portable_path, get_app_version
@@ -77,7 +78,7 @@ def main():
     sizes = [16, 24, 32, 48, 64, 96, 128, 256, 512]
 
     for size in sizes:
-        icon.addFile(os.path.join(basedir, '_internal/ptcgpb-companion-icon.ico'), QtCore.QSize(size, size))
+        icon.addFile(os.path.join(basedir, 'ptcgpb-companion-icon.ico'), QtCore.QSize(size, size))
 
     app.setWindowIcon(icon)
 
@@ -92,6 +93,7 @@ def main():
     # Create and show main window
     try:
         main_window = MainWindow()
+        main_window.setWindowIcon(QtGui.QIcon(icon))
         main_window.show()
         logger.info("Main window created and shown")
 
