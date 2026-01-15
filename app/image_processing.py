@@ -486,7 +486,7 @@ class ImageProcessor:
                     # Note: We assume all templates were resized to the same quick_target_height
                     # which is true for standard card regions (75x106)
                     result = cv2.matchTemplate(
-                        quick_gray, quick_template_gray, cv2.TM_CCORR_NORMED
+                        quick_gray, quick_template_gray, cv2.TM_CCOEFF_NORMED
                     )
                     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
@@ -506,7 +506,7 @@ class ImageProcessor:
                         quick_template_gray, (quick_gray.shape[1], quick_gray.shape[0])
                     )
                     result = cv2.matchTemplate(
-                        quick_gray, quick_template_resized, cv2.TM_CCORR_NORMED
+                        quick_gray, quick_template_resized, cv2.TM_CCOEFF_NORMED
                     )
                     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
                     if max_val > set_scores.get(set_name, 0):
@@ -530,7 +530,7 @@ class ImageProcessor:
 
         # Optimization: If quick search is extremely confident, skip detailed search
         # Only if not forced to do a detailed search
-        CONFIDENCE_THRESHOLD = 0.90
+        CONFIDENCE_THRESHOLD = 0.80
         if (
             not force_detailed
             and quick_best_match
@@ -562,7 +562,7 @@ class ImageProcessor:
                 # Use pre-calculated full-size grayscale template
                 try:
                     result = cv2.matchTemplate(
-                        upscaled_gray, template_gray, cv2.TM_CCORR_NORMED
+                        upscaled_gray, template_gray, cv2.TM_CCOEFF_NORMED
                     )
                     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
