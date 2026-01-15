@@ -92,6 +92,11 @@ class MainWindow(QMainWindow):
         self.new_version_available = False
         self.latest_version_info = {}
 
+        # Dashboard statistics debounce timer
+        self._dashboard_timer = QTimer()
+        self._dashboard_timer.setSingleShot(True)
+        self._dashboard_timer.timeout.connect(self._update_dashboard_statistics)
+
         # Initialize UI components
         self._setup_status_bar()  # Initialize status bar early so it can be used by other setup methods
         self._setup_menu_bar()
@@ -171,7 +176,7 @@ class MainWindow(QMainWindow):
 
                 # Mark task running and update dashboard counters
                 self._update_task_status(task_id, "Running")
-                self._update_dashboard_statistics()
+                self._request_dashboard_update()
         except Exception as e:
             logger.error(f"Failed to start art download worker: {e}")
             self._update_status_message(f"Failed to start art download: {e}")
@@ -367,6 +372,10 @@ class MainWindow(QMainWindow):
 
     def _update_dashboard_statistics(self):
         """Update dashboard statistics from database"""
+        # Only update if the dashboard tab is active to save resources
+        if self.tab_widget.currentIndex() != 0:
+            return
+
         try:
             if hasattr(self, "db") and self.db:
                 # Get statistics from database
@@ -397,6 +406,13 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"Error updating dashboard statistics: {e}")
             self._update_status_message(f"Error updating statistics: {e}")
+
+    def _request_dashboard_update(self):
+        """Request a dashboard update with debouncing"""
+        if hasattr(self, "_dashboard_timer"):
+            self._dashboard_timer.start(1000)  # Wait 1 second before actually updating
+        else:
+            self._update_dashboard_statistics()
 
     def _update_recent_activity(self):
         """Update recent activity list"""
@@ -562,8 +578,10 @@ class MainWindow(QMainWindow):
         self.cards_tab_index = self.tab_widget.addTab(cards_widget, "Cards")
 
     def _on_tab_changed(self, index):
-        """Handle tab changes to refresh cards after rendering"""
-        if index == getattr(self, "cards_tab_index", -1):
+        """Handle tab changes to refresh content"""
+        if index == 0:  # Dashboard tab
+            self._update_dashboard_statistics()
+        elif index == getattr(self, "cards_tab_index", -1):
             # Only auto-load if there is no data yet
             try:
                 has_data = False
@@ -1461,7 +1479,7 @@ class MainWindow(QMainWindow):
 
             # Update task status and dashboard
             self._update_task_status(task_id, "Running")
-            self._update_dashboard_statistics()
+            self._request_dashboard_update()
 
             self._update_status_message("CSV import started in background")
 
@@ -1479,7 +1497,7 @@ class MainWindow(QMainWindow):
             self._update_task_status(task_id, progress=percentage)
 
             # Refresh dashboard to show progress in recent activity
-            self._update_dashboard_statistics()
+            self._request_dashboard_update()
 
     def _on_csv_import_status(self, status: str):
         """Handle CSV import status updates"""
@@ -1537,7 +1555,7 @@ class MainWindow(QMainWindow):
             self.active_workers.pop()
 
         # Refresh dashboard statistics only; Cards tab refresh is manual after first load
-        self._update_dashboard_statistics()
+        self._request_dashboard_update()
 
         # Clear progress indicators
         self._clear_progress()
@@ -1574,7 +1592,7 @@ class MainWindow(QMainWindow):
             self._update_task_status(task_id, progress=percentage)
 
             # Refresh dashboard to show progress in recent activity
-            self._update_dashboard_statistics()
+            self._request_dashboard_update()
 
     def _on_screenshot_processing_status(self, status: str):
         """Handle screenshot processing status updates"""
@@ -1632,7 +1650,7 @@ class MainWindow(QMainWindow):
             self.active_workers.pop()
 
         # Refresh dashboard statistics only; Cards tab refresh is manual after first load
-        self._update_dashboard_statistics()
+        self._request_dashboard_update()
 
         # Clear progress indicators
         self._clear_progress()
@@ -1749,7 +1767,7 @@ class MainWindow(QMainWindow):
 
             # Update task status and dashboard
             self._update_task_status(task_id, "Running")
-            self._update_dashboard_statistics()
+            self._request_dashboard_update()
 
             self._update_status_message("Screenshot processing started in background")
 

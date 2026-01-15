@@ -16,6 +16,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def get_max_thread_count():
+    # because everyone's hardware is different, we set limits here.
+    # OpenCV operations are CPU intensive and often already multi-threaded,
+    # so we limit the number of worker threads to avoid oversubscription.
+    return min(os.cpu_count() or 4, 8)
+
+
+
 class WorkerSignals(QObject):
     """Signals available from worker threads"""
 
@@ -68,7 +76,7 @@ class CSVImportWorker(QRunnable):
             from app.database import Database
 
             # Determine number of workers - balance between speed and system load
-            max_workers = min(os.cpu_count() or 4, 8)
+            max_workers = get_max_thread_count()
             processed_count = 0
             new_records = 0
 
@@ -187,8 +195,7 @@ class CardArtDownloadWorker(QRunnable):
         self.card_url_template = card_url_template or (
             "https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/{set_id}/{set_id}_{card_num}_EN_SM.webp"
         )
-        # Cap workers to be gentle
-        self.max_workers = max_workers or min(os.cpu_count() or 4, 6)
+        self.max_workers = max_workers or get_max_thread_count()
 
     def cancel(self):
         """Cancel the worker"""
@@ -431,8 +438,7 @@ class ScreenshotProcessingWorker(QRunnable):
             # Process images in parallel using ThreadPoolExecutor for better performance
             from concurrent.futures import ThreadPoolExecutor, as_completed
 
-            # Determine number of workers - balance between speed and system load
-            max_workers = min(os.cpu_count() or 4, 8)
+            max_workers = get_max_thread_count()
             processed_count = 0
             successful_files = 0
 
@@ -616,61 +622,62 @@ class ScreenshotProcessingWorker(QRunnable):
                 "Shinedust": "0",
             }
 
-            screenshot_id, is_new = db.add_screenshot(screenshot_data)
+            with db.transaction():
+                screenshot_id, is_new = db.add_screenshot(screenshot_data)
 
-            if not is_new and not self.overwrite:
-                # If the screenshot already exists, check if it's already been processed
-                # This allows processing screenshots that were imported via CSV but not yet analyzed
-                if db.check_screenshot_exists(filename, screenshot_data["Account"]):
-                    self.signals.status.emit(
-                        f"Skipping {filename}: Already processed in database"
-                    )
-                    return
-                else:
-                    logger.info(
-                        f"Screenshot {filename} exists in database but is not processed. Continuing."
-                    )
+                if not is_new and not self.overwrite:
+                    # If the screenshot already exists, check if it's already been processed
+                    # This allows processing screenshots that were imported via CSV but not yet analyzed
+                    if db.check_screenshot_exists(filename, screenshot_data["Account"]):
+                        self.signals.status.emit(
+                            f"Skipping {filename}: Already processed in database"
+                        )
+                        return
+                    else:
+                        logger.info(
+                            f"Screenshot {filename} exists in database but is not processed. Continuing."
+                        )
 
-            # Add each card to database and create relationships
-            for card_data in cards_found:
-                # Extract card code if available
-                card_code = card_data.get("card_code", "")
-                card_name = card_data.get("card_name", "Unknown")
-                card_set = card_data.get("card_set", "Unknown")
+                # Add each card to database and create relationships
+                for card_data in cards_found:
+                    # Extract card code if available
+                    card_code = card_data.get("card_code", "")
+                    card_name = card_data.get("card_name", "Unknown")
+                    card_set = card_data.get("card_set", "Unknown")
 
-                # Try to extract card number from code for better image path
-                if card_code and "_" in card_code:
-                    set_code, card_number = card_code.split("_", 1)
-                    # Use the card number for the image path
-                    image_path = f"{set_code}/{card_code}.webp"
-                else:
-                    # Fallback to name-based path
-                    image_path = f"{card_set}/{card_name}.webp"
+                    # Try to extract card number from code for better image path
+                    if card_code and "_" in card_code:
+                        set_code, card_number = card_code.split("_", 1)
+                        # Use the card number for the image path
+                        image_path = f"{set_code}/{card_code}.webp"
+                    else:
+                        # Fallback to name-based path
+                        image_path = f"{card_set}/{card_name}.webp"
 
-                # Add card (if not already exists)
-                card_id = db.add_card(
-                    card_name=card_name,
-                    card_set=card_set,
-                    image_path=image_path,
-                    rarity="Common",  # Default rarity for now
-                )
-
-                # Add relationship between screenshot and card
-                if card_id:
-                    db.add_screenshot_card(
-                        screenshot_id=screenshot_id,
-                        card_id=card_id,
-                        position=card_data.get("position", 1),
-                        confidence=card_data.get("confidence", 0.0),
+                    # Add card (if not already exists)
+                    card_id = db.add_card(
+                        card_name=card_name,
+                        card_set=card_set,
+                        image_path=image_path,
+                        rarity="Common",  # Default rarity for now
                     )
 
-                    # Log the card detection
-                    logger.info(
-                        f"Stored card {card_name} ({card_set}) with confidence {card_data.get('confidence', 0.0):.2f}"
-                    )
+                    # Add relationship between screenshot and card
+                    if card_id:
+                        db.add_screenshot_card(
+                            screenshot_id=screenshot_id,
+                            card_id=card_id,
+                            position=card_data.get("position", 1),
+                            confidence=card_data.get("confidence", 0.0),
+                        )
 
-            # Mark screenshot as processed
-            db.mark_screenshot_processed(screenshot_id)
+                        # Log the card detection
+                        logger.info(
+                            f"Stored card {card_name} ({card_set}) with confidence {card_data.get('confidence', 0.0):.2f}"
+                        )
+
+                # Mark screenshot as processed
+                db.mark_screenshot_processed(screenshot_id)
 
             self.signals.status.emit(f"Stored {len(cards_found)} cards from {filename}")
 

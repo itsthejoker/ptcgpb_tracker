@@ -9,6 +9,7 @@ import sqlite3
 import threading
 from typing import List, Dict, Any, Optional
 import logging
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,38 @@ class Database:
         # Thread-local storage for database connections
         # SQLite connections are thread-bound, so each thread must have its own connection
         self.local_data = threading.local()
+
+    @contextmanager
+    def transaction(self):
+        """
+        Context manager for database transactions.
+        
+        Usage:
+            with db.transaction():
+                db.add_screenshot(...)
+                db.add_card(...)
+        """
+        conn = self._get_connection()
+        previous_state = getattr(self.local_data, "in_transaction", False)
+        self.local_data.in_transaction = True
+        try:
+            # Check if we are already in a transaction to avoid nested BEGIN
+            if not previous_state:
+                conn.execute("BEGIN TRANSACTION")
+            yield conn
+            if not previous_state:
+                conn.commit()
+        except Exception:
+            if not previous_state:
+                conn.rollback()
+            raise
+        finally:
+            self.local_data.in_transaction = previous_state
+
+    def _commit(self, conn):
+        """Commit the current transaction if not managed by transaction() context manager"""
+        if not getattr(self.local_data, "in_transaction", False):
+            conn.commit()
 
     def _initialize_database(self):
         """Initialize the database with required tables"""
@@ -191,7 +224,7 @@ class Database:
                         screenshot_id,
                     ),
                 )
-                conn.commit()
+                self._commit(conn)
                 return screenshot_id, False  # Return existing ID and False for is_new
 
             cursor.execute(
@@ -214,7 +247,7 @@ class Database:
                 ),
             )
 
-            conn.commit()
+            self._commit(conn)
             return cursor.lastrowid, True  # Return new ID and True for is_new
 
         except Exception as e:
@@ -250,7 +283,7 @@ class Database:
                 (card_name, card_set, image_path, rarity),
             )
 
-            conn.commit()
+            self._commit(conn)
 
             # Get the card ID
             cursor.execute(
@@ -290,7 +323,7 @@ class Database:
                 (screenshot_id, card_id, position, confidence),
             )
 
-            conn.commit()
+            self._commit(conn)
         except Exception as e:
             logger.error(f"Error adding screenshot_card relationship: {e}")
             raise
@@ -310,7 +343,7 @@ class Database:
             cursor.execute(
                 "UPDATE screenshots SET processed = 1 WHERE id = ?", (screenshot_id,)
             )
-            conn.commit()
+            self._commit(conn)
         finally:
             self._return_connection()
 
