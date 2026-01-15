@@ -126,9 +126,9 @@ class CSVImportWorker(QRunnable):
                     # Update progress every 10 rows or at the end
                     if processed_count % 10 == 0 or processed_count == total_rows:
                         self.signals.progress.emit(processed_count, total_rows)
-                        self.signals.status.emit(
-                            f"Processed {processed_count} of {total_rows} rows"
-                        )
+                        # self.signals.status.emit(
+                        #     f"Processed {processed_count} of {total_rows} rows"
+                        # )
 
             self.signals.progress.emit(total_rows, total_rows)
             self.signals.status.emit(
