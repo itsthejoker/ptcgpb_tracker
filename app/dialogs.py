@@ -340,18 +340,13 @@ class ScreenshotProcessingDialog(QDialog):
             self.status_label.setText(f"Error: {e}")
             self.process_btn.setEnabled(True)
 
-    def _process_images(self):
-        """Process image files and extract card information"""
-        # This is now handled by the ScreenshotProcessingWorker in the main window
-        pass
-
 
 class AboutDialog(QDialog):
     """About dialog for the application"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("About Card Counter")
+        self.setWindowTitle("About PTCGPB Companion")
         self.setMinimumSize(400, 100)
 
         self._setup_ui()
