@@ -426,18 +426,15 @@ class ScreenshotProcessingWorker(QRunnable):
 
             # Initialize image processor
             from app.image_processing import ImageProcessor
+            from app.utils import get_portable_path
 
-            processor = ImageProcessor()
+            template_dir = get_portable_path("resources", "card_imgs")
+            processor = ImageProcessor(template_dir)
 
             # Load card templates from resources
             try:
-                # Get the path to card templates
-                from app.utils import get_portable_path
-
-                template_dir = get_portable_path("resources", "card_imgs")
-
                 if os.path.isdir(template_dir):
-                    processor.load_card_templates(template_dir)
+                    # Templates are already loaded by constructor, but we want to log it
                     self.signals.status.emit(
                         f"Loaded {processor.get_template_count()} card templates"
                     )

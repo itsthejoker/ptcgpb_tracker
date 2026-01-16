@@ -34,6 +34,12 @@ class ImageProcessor:
         self.gray_templates = {}
         self.phash_templates = {}
 
+        # Vectorized data structures for performance
+        self.phash_matrix = None
+        self.phash_metadata = []
+        self.template_vectors = {}  # {set_name: {'matrix': np.array, 'metadata': list}}
+        self.match_width, self.match_height = 92, 128
+
         if self.card_database:
             self._prepare_templates()
 
@@ -225,11 +231,12 @@ class ImageProcessor:
                 self.phash_templates[set_name] = {}
 
             for card_name, template in cards.items():
-                # 1. Full-size grayscale (for detailed search)
-                if len(template.shape) == 3:
-                    gray = cv2.cvtColor(template, cv2.COLOR_RGB2GRAY)
+                # 1. Matching resolution grayscale
+                small = cv2.resize(template, (self.match_width, self.match_height))
+                if len(small.shape) == 3:
+                    gray = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY)
                 else:
-                    gray = template
+                    gray = small
                 self.gray_templates[set_name][card_name] = gray
 
                 # 2. pHash (computed from full image for better accuracy)
@@ -243,6 +250,53 @@ class ImageProcessor:
         if new_hashes_computed:
             self._save_phashes()
 
+        self._rebuild_vectorized_data()
+
+        # Clear large full-size caches to save memory
+        self.card_database = {}
+        self.gray_templates = {}
+
+    def _rebuild_vectorized_data(self):
+        """Build vectorized data structures for faster matching"""
+        # 1. Rebuild pHash matrix
+        phash_list = []
+        self.phash_metadata = []
+
+        for set_name, cards in self.phash_templates.items():
+            for card_name, h in cards.items():
+                phash_list.append(h.hash.flatten())
+                self.phash_metadata.append((set_name, card_name))
+
+        if phash_list:
+            self.phash_matrix = np.array(phash_list)
+        else:
+            self.phash_matrix = None
+
+        # 2. Rebuild template matrices for detailed search
+        self.template_vectors = {}
+
+        logger.info(
+            f"Vectorizing templates at {self.match_width}x{self.match_height}..."
+        )
+        for set_name, cards in self.gray_templates.items():
+            vectors = []
+            metadata = []
+            for card_name, gray in cards.items():
+                # Normalize (already resized in _prepare_templates)
+                vec = gray.astype(np.float32).flatten()
+                vec -= np.mean(vec)
+                norm = np.linalg.norm(vec)
+                if norm > 0:
+                    vec /= norm
+                vectors.append(vec)
+                metadata.append(card_name)
+
+            if vectors:
+                self.template_vectors[set_name] = {
+                    "matrix": np.array(vectors),
+                    "metadata": metadata,
+                }
+
     def process_screenshot(self, image_path: str) -> List[Dict[str, Any]]:
         """
         Process a screenshot to identify cards using fixed position detection
@@ -253,9 +307,9 @@ class ImageProcessor:
         Returns:
             List[Dict]: List of identified cards with positions and confidence scores
         """
-        if not self.card_database:
+        if not self.phash_templates:
             raise RuntimeError(
-                "Card database not loaded. Call load_card_templates() first."
+                "Card templates not loaded. Call load_card_templates() first."
             )
 
         try:
@@ -529,32 +583,76 @@ class ImageProcessor:
         quick_best_match = None
         quick_best_score = -1
 
-        if force_set:
-            search_sets = [force_set]
+        if self.phash_matrix is not None:
+            # Filter indices based on force_set / exclude_sets
+            if force_set:
+                indices = [
+                    i
+                    for i, m in enumerate(self.phash_metadata)
+                    if m[0] == force_set
+                ]
+            elif exclude_sets:
+                indices = [
+                    i
+                    for i, m in enumerate(self.phash_metadata)
+                    if m[0] not in exclude_sets
+                ]
+            else:
+                indices = range(len(self.phash_metadata))
+
+            if indices:
+                sub_matrix = self.phash_matrix[indices]
+                q_hash = region_hash.hash.flatten()
+                # Hamming distance: count non-matching bits
+                distances = np.count_nonzero(sub_matrix != q_hash, axis=1)
+                scores = 1.0 - (distances / 64.0)
+
+                for i, score in enumerate(scores):
+                    meta_idx = indices[i]
+                    s_name, c_name = self.phash_metadata[meta_idx]
+
+                    if score > set_scores.get(s_name, 0):
+                        set_scores[s_name] = score
+
+                    if score > quick_best_score:
+                        quick_best_score = score
+                        quick_best_match = {
+                            "card_name": c_name,
+                            "card_set": s_name,
+                            "confidence": float(score),
+                        }
         else:
-            search_sets = [s for s in self.phash_templates.keys() if s not in (exclude_sets or [])]
+            # Fallback to slow loop if matrix not built (should not happen)
+            if force_set:
+                search_sets = [force_set]
+            else:
+                search_sets = [
+                    s
+                    for s in self.phash_templates.keys()
+                    if s not in (exclude_sets or [])
+                ]
 
-        for set_name in search_sets:
-            if set_name not in self.phash_templates:
-                continue
+            for set_name in search_sets:
+                if set_name not in self.phash_templates:
+                    continue
 
-            cards = self.phash_templates[set_name]
-            for card_name, template_hash in cards.items():
-                # Hamming distance: lower is better. Max distance is 64 for 8x8 hash.
-                distance = region_hash - template_hash
-                # Convert to a confidence-like score (0 to 1)
-                score = 1.0 - (distance / 64.0)
+                cards = self.phash_templates[set_name]
+                for card_name, template_hash in cards.items():
+                    # Hamming distance: lower is better. Max distance is 64 for 8x8 hash.
+                    distance = region_hash - template_hash
+                    # Convert to a confidence-like score (0 to 1)
+                    score = 1.0 - (distance / 64.0)
 
-                if score > set_scores.get(set_name, 0):
-                    set_scores[set_name] = score
+                    if score > set_scores.get(set_name, 0):
+                        set_scores[set_name] = score
 
-                if score > quick_best_score:
-                    quick_best_score = score
-                    quick_best_match = {
-                        "card_name": card_name,
-                        "card_set": set_name,
-                        "confidence": score,
-                    }
+                    if score > quick_best_score:
+                        quick_best_score = score
+                        quick_best_match = {
+                            "card_name": card_name,
+                            "card_set": set_name,
+                            "confidence": score,
+                        }
 
         # Optimization: If quick search is extremely confident, skip detailed search
         # Only if not forced to do a detailed search
@@ -589,9 +687,10 @@ class ImageProcessor:
 
         logger.info(f"Candidate sets for detailed search: {candidate_sets}")
 
-        # Upscale card region to match full card resolution for detailed matching
-        target_width, target_height = 367, 512  # Standard full card size
-        upscaled_region = cv2.resize(card_region, (target_width, target_height))
+        # Upscale card region to match matching resolution for detailed matching
+        upscaled_region = cv2.resize(
+            card_region, (self.match_width, self.match_height)
+        )
 
         # Convert to grayscale once for efficiency
         if len(upscaled_region.shape) == 3:
@@ -599,27 +698,72 @@ class ImageProcessor:
         else:
             upscaled_gray = upscaled_region
 
+        # Normalize query region for correlation
+        q_vec = upscaled_gray.astype(np.float32).flatten()
+        q_vec -= np.mean(q_vec)
+        q_norm = np.linalg.norm(q_vec)
+        if q_norm > 0:
+            q_vec /= q_norm
+
         # Detailed search in candidate sets
         for search_set in candidate_sets:
-            if search_set not in self.gray_templates:
+            if search_set not in self.template_vectors:
+                # Fallback if vectorized data not available
+                if (
+                    search_set in self.gray_templates
+                    and self.gray_templates[search_set]
+                ):
+                    for card_name, template_gray in self.gray_templates[
+                        search_set
+                    ].items():
+                        try:
+                            # Resize template if it doesn't match
+                            if template_gray.shape[::-1] != (
+                                self.match_width,
+                                self.match_height,
+                            ):
+                                template_gray = cv2.resize(
+                                    template_gray,
+                                    (self.match_width, self.match_height),
+                                )
+
+                            result = cv2.matchTemplate(
+                                upscaled_gray,
+                                template_gray,
+                                cv2.TM_CCOEFF_NORMED,
+                            )
+                            _, max_val, _, _ = cv2.minMaxLoc(result)
+
+                            if max_val > best_score:
+                                best_score = max_val
+                                best_match = {
+                                    "card_name": card_name,
+                                    "card_set": search_set,
+                                    "confidence": float(max_val),
+                                }
+                        except cv2.error:
+                            continue
                 continue
 
-            for card_name, template_gray in self.gray_templates[search_set].items():
-                try:
-                    result = cv2.matchTemplate(
-                        upscaled_gray, template_gray, cv2.TM_CCOEFF_NORMED
-                    )
-                    _, max_val, _, _ = cv2.minMaxLoc(result)
+            data = self.template_vectors[search_set]
+            matrix = data["matrix"]
+            metadata = data["metadata"]
 
-                    if max_val > best_score:
-                        best_score = max_val
-                        best_match = {
-                            "card_name": card_name,
-                            "card_set": search_set,
-                            "confidence": max_val,
-                        }
-                except cv2.error:
-                    continue
+            # Matrix-vector multiplication for all cards in set
+            # This computes normalized correlation (TM_CCOEFF_NORMED)
+            # because both matrix and q_vec are zero-centered and unit-normalized.
+            scores = matrix @ q_vec
+
+            max_idx = np.argmax(scores)
+            max_val = scores[max_idx]
+
+            if max_val > best_score:
+                best_score = max_val
+                best_match = {
+                    "card_name": metadata[max_idx],
+                    "card_set": search_set,
+                    "confidence": float(max_val),
+                }
 
         # If detailed search found a better match or if we haven't found anything yet
         if best_match:
@@ -640,7 +784,7 @@ class ImageProcessor:
         """
         # Count templates across all sets
         count = 0
-        for set_name, cards in self.card_database.items():
+        for set_name, cards in self.phash_templates.items():
             count += len(cards)
         return count
 
@@ -653,7 +797,7 @@ class ImageProcessor:
         """
         # Collect all card codes from all sets
         codes = []
-        for set_name, cards in self.card_database.items():
+        for set_name, cards in self.phash_templates.items():
             for card_name in cards.keys():
                 codes.append(f"{set_name}_{card_name}")
         return codes
