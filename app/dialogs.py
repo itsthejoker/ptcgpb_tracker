@@ -31,7 +31,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread, QSize
 from PyQt6.QtGui import QIcon, QValidator, QPixmap
 import os
 import csv
-from app.utils import get_app_version
+from app.utils import get_app_version, SECTION_ORDER
 from typing import Optional, Dict, Any
 
 
@@ -386,53 +386,90 @@ class PreferencesDialog(QDialog):
             "General/screenshots_dir": "Directory where your PTCGP screenshots are stored.",
             "Screenshots/watch_directory": "Enable or disable automatic monitoring of the screenshots directory.",
             "Screenshots/check_interval": "How often (in minutes) to check for new screenshots when monitoring is enabled.",
+            "Debug/max_cores": "Override the maximum number of cores used for processing. Set to 0 to use system default.",
         }
 
         keys = self._settings.settings.allKeys()
-        for key in sorted(keys):
-            value = self._settings.get_setting(key)
+        
+        # Group keys by section
+        sections_map = {}
+        for key in keys:
+            section = key.split("/")[0] if "/" in key else ""
+            if section not in sections_map:
+                sections_map[section] = []
+            sections_map[section].append(key)
 
-            row_layout = QHBoxLayout()
+        # Sort sections according to SECTION_ORDER
+        def section_sort_key(s):
+            try:
+                return SECTION_ORDER.index(s)
+            except ValueError:
+                return len(SECTION_ORDER) + (1 if not s else 0), s
 
-            # Create a label for the key
-            label = QLabel(key)
+        sorted_sections = sorted(sections_map.keys(), key=section_sort_key)
 
-            # Help message support
-            if key in help_messages:
-                # Add tooltip to label
-                label.setToolTip(help_messages[key])
+        current_section = None
+        for section in sorted_sections:
+            # Add spacing and a header for the new section
+            if current_section is not None:
+                # Add a gap before the next section
+                spacer = QWidget()
+                spacer.setMinimumHeight(20)
+                self.form_layout.addRow(spacer)
 
-                # Add a small help icon
-                help_icon = QLabel("ⓘ")
-                help_icon.setToolTip(help_messages[key])
-                help_icon.setStyleSheet(
-                    "color: #0078d7; font-weight: bold; margin-right: 5px;"
-                )
-                row_layout.addWidget(help_icon)
+            # Add a section header
+            header_text = section.upper() if section else "OTHER"
+            header_label = QLabel(header_text)
+            header_label.setStyleSheet("font-weight: bold; color: #555; margin-top: 10px;")
+            self.form_layout.addRow(header_label)
+            current_section = section
 
-            input_widget = None
+            # Sort keys within section
+            for key in sorted(sections_map[section]):
+                value = self._settings.get_setting(key)
 
-            # Handle booleans
-            if isinstance(value, bool) or str(value).lower() in ("true", "false"):
-                checkbox = QCheckBox()
-                checkbox.setChecked(str(value).lower() == "true" or value is True)
-                row_layout.addWidget(checkbox)
-                input_widget = checkbox
-            else:
-                line_edit = QLineEdit(str(value))
-                row_layout.addWidget(line_edit)
-                input_widget = line_edit
+                row_layout = QHBoxLayout()
 
-                # Add Browse button for path-like keys
-                if "path" in key.lower() or "dir" in key.lower():
-                    browse_btn = QPushButton("Browse...")
-                    browse_btn.clicked.connect(
-                        lambda checked, k=key, le=line_edit: self._browse(k, le)
+                # Create a label for the key (show only the setting name, not the section)
+                display_name = key.split("/")[-1] if "/" in key else key
+                label = QLabel(display_name)
+
+                # Help message support
+                if key in help_messages:
+                    # Add tooltip to label
+                    label.setToolTip(help_messages[key])
+
+                    # Add a small help icon
+                    help_icon = QLabel("ⓘ")
+                    help_icon.setToolTip(help_messages[key])
+                    help_icon.setStyleSheet(
+                        "color: #0078d7; font-weight: bold; margin-right: 5px;"
                     )
-                    row_layout.addWidget(browse_btn)
+                    row_layout.addWidget(help_icon)
 
-            self._inputs[key] = input_widget
-            self.form_layout.addRow(label, row_layout)
+                input_widget = None
+
+                # Handle booleans
+                if isinstance(value, bool) or str(value).lower() in ("true", "false"):
+                    checkbox = QCheckBox()
+                    checkbox.setChecked(str(value).lower() == "true" or value is True)
+                    row_layout.addWidget(checkbox)
+                    input_widget = checkbox
+                else:
+                    line_edit = QLineEdit(str(value))
+                    row_layout.addWidget(line_edit)
+                    input_widget = line_edit
+
+                    # Add Browse button for path-like keys
+                    if "path" in key.lower() or "dir" in key.lower():
+                        browse_btn = QPushButton("Browse...")
+                        browse_btn.clicked.connect(
+                            lambda checked, k=key, le=line_edit: self._browse(k, le)
+                        )
+                        row_layout.addWidget(browse_btn)
+
+                self._inputs[key] = input_widget
+                self.form_layout.addRow(label, row_layout)
 
     def _browse(self, key, line_edit):
         """Open a file or directory browser based on the key name"""

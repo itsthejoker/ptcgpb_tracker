@@ -66,7 +66,7 @@ class Database:
         try:
             # Check if we are already in a transaction to avoid nested BEGIN
             if not previous_state:
-                conn.execute("BEGIN TRANSACTION")
+                conn.execute("BEGIN IMMEDIATE TRANSACTION")
             yield conn
             if not previous_state:
                 conn.commit()

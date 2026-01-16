@@ -13,10 +13,17 @@ import csv
 import time
 import logging
 
+from app.utils import PortableSettings
+
 logger = logging.getLogger(__name__)
 
 
 def get_max_thread_count():
+    settings = PortableSettings()
+    max_cores = settings.get_setting("Debug/max_cores", 0)
+    if max_cores > 0:
+        return max_cores
+
     # Leave at least one core for the UI thread to keep things responsive
     cpu_count = os.cpu_count() or 2
     # Use max(1, count - 1) but still cap at 8 to avoid too many threads on high-core systems
@@ -306,6 +313,19 @@ class CardArtDownloadWorker(QRunnable):
             self.signals.status.emit(
                 f"Card art download completed: {total_saved} images saved across {len(set_ids)} sets"
             )
+
+            # Precompute pHashes for downloaded cards
+            if total_saved > 0 and not self._is_cancelled:
+                try:
+                    self.signals.status.emit("Precomputing pHashes for downloaded cards...")
+                    from app.image_processing import ImageProcessor
+
+                    processor = ImageProcessor(dest_root)
+                    self.signals.status.emit("pHashes precomputed and saved.")
+                except Exception as e:
+                    logger.error(f"Failed to precompute pHashes: {e}")
+                    self.signals.status.emit(f"Warning: Failed to precompute pHashes: {e}")
+
             self.signals.result.emit(
                 {
                     "sets": len(set_ids),
@@ -596,91 +616,104 @@ class ScreenshotProcessingWorker(QRunnable):
 
     def _store_results_in_database(self, filename: str, cards_found: list):
         """Store processing results in the database"""
-        try:
-            # Use the database instance from the worker
-            db = self.db
+        max_retries = 5
+        retry_delay = 1.0  # seconds
 
-            # Identify set from cards found
-            pack_type = self._identify_set(cards_found)
+        for attempt in range(max_retries):
+            try:
+                # Use the database instance from the worker
+                db = self.db
 
-            # Fallback to filename if set is unknown
-            if pack_type == "Unknown":
-                pack_type = self._extract_pack_type(filename)
+                # Identify set from cards found
+                pack_type = self._identify_set(cards_found)
 
-            # Add screenshot record
-            # Default to "Account Unknown" for screenshots without CSV info
-            screenshot_data = {
-                "Timestamp": datetime.now().isoformat(),
-                "OriginalFilename": filename,
-                "CleanFilename": "Account Unknown",
-                "Account": "Account Unknown",
-                "PackType": pack_type,
-                "CardTypes": ", ".join([card["card_name"] for card in cards_found]),
-                "CardCounts": str(len(cards_found)),
-                "PackScreenshot": filename,  # Use filename as unique key for screenshot
-                "Shinedust": "0",
-            }
+                # Fallback to filename if set is unknown
+                if pack_type == "Unknown":
+                    pack_type = self._extract_pack_type(filename)
 
-            with db.transaction():
-                screenshot_id, is_new = db.add_screenshot(screenshot_data)
+                # Add screenshot record
+                # Default to "Account Unknown" for screenshots without CSV info
+                screenshot_data = {
+                    "Timestamp": datetime.now().isoformat(),
+                    "OriginalFilename": filename,
+                    "CleanFilename": "Account Unknown",
+                    "Account": "Account Unknown",
+                    "PackType": pack_type,
+                    "CardTypes": ", ".join([card["card_name"] for card in cards_found]),
+                    "CardCounts": str(len(cards_found)),
+                    "PackScreenshot": filename,  # Use filename as unique key for screenshot
+                    "Shinedust": "0",
+                }
 
-                if not is_new and not self.overwrite:
-                    # If the screenshot already exists, check if it's already been processed
-                    # This allows processing screenshots that were imported via CSV but not yet analyzed
-                    if db.check_screenshot_exists(filename, screenshot_data["Account"]):
-                        self.signals.status.emit(
-                            f"Skipping {filename}: Already processed in database"
-                        )
-                        return
-                    else:
-                        logger.info(
-                            f"Screenshot {filename} exists in database but is not processed. Continuing."
-                        )
+                with db.transaction():
+                    screenshot_id, is_new = db.add_screenshot(screenshot_data)
 
-                # Add each card to database and create relationships
-                for card_data in cards_found:
-                    # Extract card code if available
-                    card_code = card_data.get("card_code", "")
-                    card_name = card_data.get("card_name", "Unknown")
-                    card_set = card_data.get("card_set", "Unknown")
+                    if not is_new and not self.overwrite:
+                        # If the screenshot already exists, check if it's already been processed
+                        # This allows processing screenshots that were imported via CSV but not yet analyzed
+                        if db.check_screenshot_exists(filename, screenshot_data["Account"]):
+                            self.signals.status.emit(
+                                f"Skipping {filename}: Already processed in database"
+                            )
+                            return
+                        else:
+                            logger.info(
+                                f"Screenshot {filename} exists in database but is not processed. Continuing."
+                            )
 
-                    # Try to extract card number from code for better image path
-                    if card_code and "_" in card_code:
-                        set_code, card_number = card_code.split("_", 1)
-                        # Use the card number for the image path
-                        image_path = f"{set_code}/{card_code}.webp"
-                    else:
-                        # Fallback to name-based path
-                        image_path = f"{card_set}/{card_name}.webp"
+                    # Add each card to database and create relationships
+                    for card_data in cards_found:
+                        # Extract card code if available
+                        card_code = card_data.get("card_code", "")
+                        card_name = card_data.get("card_name", "Unknown")
+                        card_set = card_data.get("card_set", "Unknown")
 
-                    # Add card (if not already exists)
-                    card_id = db.add_card(
-                        card_name=card_name,
-                        card_set=card_set,
-                        image_path=image_path,
-                        rarity="Common",  # Default rarity for now
-                    )
+                        # Try to extract card number from code for better image path
+                        if card_code and "_" in card_code:
+                            set_code, card_number = card_code.split("_", 1)
+                            # Use the card number for the image path
+                            image_path = f"{set_code}/{card_code}.webp"
+                        else:
+                            # Fallback to name-based path
+                            image_path = f"{card_set}/{card_name}.webp"
 
-                    # Add relationship between screenshot and card
-                    if card_id:
-                        db.add_screenshot_card(
-                            screenshot_id=screenshot_id,
-                            card_id=card_id,
-                            position=card_data.get("position", 1),
-                            confidence=card_data.get("confidence", 0.0),
+                        # Add card (if not already exists)
+                        card_id = db.add_card(
+                            card_name=card_name,
+                            card_set=card_set,
+                            image_path=image_path,
+                            rarity="Common",  # Default rarity for now
                         )
 
-                        # Log the card detection
-                        logger.info(
-                            f"Stored card {card_name} ({card_set}) with confidence {card_data.get('confidence', 0.0):.2f}"
-                        )
+                        # Add relationship between screenshot and card
+                        if card_id:
+                            db.add_screenshot_card(
+                                screenshot_id=screenshot_id,
+                                card_id=card_id,
+                                position=card_data.get("position", 1),
+                                confidence=card_data.get("confidence", 0.0),
+                            )
 
-                # Mark screenshot as processed
-                db.mark_screenshot_processed(screenshot_id)
+                            # Log the card detection
+                            logger.info(
+                                f"Stored card {card_name} ({card_set}) with confidence {card_data.get('confidence', 0.0):.2f}"
+                            )
 
-        except Exception as e:
-            logger.error(f"Error storing results for {filename}: {e}")
-            raise
+                    # Mark screenshot as processed
+                    db.mark_screenshot_processed(screenshot_id)
+                
+                # If we reached here, success!
+                return
+
+            except Exception as e:
+                if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                    logger.warning(f"Database locked while storing {filename}, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(retry_delay)
+                    # Exponential backoff could be used here: retry_delay *= 2
+                    continue
+                
+                logger.error(f"Error storing results for {filename}: {e}")
+                raise
 
     def cancel(self):
         """Cancel the worker"""

@@ -24,7 +24,11 @@ DEFAULT_SETTINGS = {
     "Screenshots/watch_directory": True,
     "Screenshots/check_interval": 5,
     "Logging/enabled": False,
+    "Debug/max_cores": 0,
 }
+
+# Order in which sections should be displayed in the Preferences dialog
+SECTION_ORDER = ["General", "Screenshots", "Logging", "Debug"]
 
 
 def get_portable_path(*parts):

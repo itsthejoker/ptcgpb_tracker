@@ -55,6 +55,7 @@ from app.workers import (
     CardArtDownloadWorker,
     VersionCheckWorker,
     DashboardStatsWorker,
+    get_max_thread_count,
 )
 from PyQt6.QtCore import QThreadPool, Qt, QUrl
 from PyQt6.QtGui import QDesktopServices
@@ -235,7 +236,7 @@ class MainWindow(QMainWindow):
     def _init_thread_pool(self):
         """Initialize thread pool for background processing"""
         self.thread_pool = QThreadPool()
-        self.thread_pool.setMaxThreadCount(4)  # Limit to 4 concurrent workers
+        self.thread_pool.setMaxThreadCount(get_max_thread_count())
         logger.info(
             f"Thread pool initialized with max {self.thread_pool.maxThreadCount()} threads"
         )
