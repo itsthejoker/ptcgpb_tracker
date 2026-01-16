@@ -530,7 +530,7 @@ class ImageProcessor:
 
         # Optimization: If quick search is extremely confident, skip detailed search
         # Only if not forced to do a detailed search
-        CONFIDENCE_THRESHOLD = 0.80
+        CONFIDENCE_THRESHOLD = 0.85
         if (
             not force_detailed
             and quick_best_match
