@@ -31,7 +31,7 @@ class ImageProcessor:
         self.card_names = self._load_card_names()
 
         # Pre-calculated templates for performance
-        self.gray_templates = {}
+        self.color_templates = {}
         self.phash_templates = {}
 
         # Vectorized data structures for performance
@@ -215,8 +215,8 @@ class ImageProcessor:
             raise
 
     def _prepare_templates(self):
-        """Pre-calculate grayscale versions of all templates and compute pHashes"""
-        self.gray_templates = {}
+        """Pre-calculate versions of all templates and compute pHashes"""
+        self.color_templates = {}
         self.phash_templates = {}
 
         logger.info("Preparing templates and computing pHashes")
@@ -226,18 +226,14 @@ class ImageProcessor:
         new_hashes_computed = False
 
         for set_name, cards in self.card_database.items():
-            self.gray_templates[set_name] = {}
+            self.color_templates[set_name] = {}
             if set_name not in self.phash_templates:
                 self.phash_templates[set_name] = {}
 
             for card_name, template in cards.items():
-                # 1. Matching resolution grayscale
+                # 1. Matching resolution color template
                 small = cv2.resize(template, (self.match_width, self.match_height))
-                if len(small.shape) == 3:
-                    gray = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY)
-                else:
-                    gray = small
-                self.gray_templates[set_name][card_name] = gray
+                self.color_templates[set_name][card_name] = small
 
                 # 2. pHash (computed from full image for better accuracy)
                 if card_name not in self.phash_templates[set_name]:
@@ -254,7 +250,7 @@ class ImageProcessor:
 
         # Clear large full-size caches to save memory
         self.card_database = {}
-        self.gray_templates = {}
+        self.color_templates = {}
 
     def _rebuild_vectorized_data(self):
         """Build vectorized data structures for faster matching"""
@@ -278,12 +274,12 @@ class ImageProcessor:
         logger.info(
             f"Vectorizing templates at {self.match_width}x{self.match_height}..."
         )
-        for set_name, cards in self.gray_templates.items():
+        for set_name, cards in self.color_templates.items():
             vectors = []
             metadata = []
-            for card_name, gray in cards.items():
+            for card_name, color_img in cards.items():
                 # Normalize (already resized in _prepare_templates)
-                vec = gray.astype(np.float32).flatten()
+                vec = color_img.astype(np.float32).flatten()
                 vec -= np.mean(vec)
                 norm = np.linalg.norm(vec)
                 if norm > 0:
@@ -692,14 +688,8 @@ class ImageProcessor:
             card_region, (self.match_width, self.match_height)
         )
 
-        # Convert to grayscale once for efficiency
-        if len(upscaled_region.shape) == 3:
-            upscaled_gray = cv2.cvtColor(upscaled_region, cv2.COLOR_RGB2GRAY)
-        else:
-            upscaled_gray = upscaled_region
-
         # Normalize query region for correlation
-        q_vec = upscaled_gray.astype(np.float32).flatten()
+        q_vec = upscaled_region.astype(np.float32).flatten()
         q_vec -= np.mean(q_vec)
         q_norm = np.linalg.norm(q_vec)
         if q_norm > 0:
@@ -710,26 +700,26 @@ class ImageProcessor:
             if search_set not in self.template_vectors:
                 # Fallback if vectorized data not available
                 if (
-                    search_set in self.gray_templates
-                    and self.gray_templates[search_set]
+                    search_set in self.color_templates
+                    and self.color_templates[search_set]
                 ):
-                    for card_name, template_gray in self.gray_templates[
+                    for card_name, template_color in self.color_templates[
                         search_set
                     ].items():
                         try:
                             # Resize template if it doesn't match
-                            if template_gray.shape[::-1] != (
+                            if template_color.shape[:2][::-1] != (
                                 self.match_width,
                                 self.match_height,
                             ):
-                                template_gray = cv2.resize(
-                                    template_gray,
+                                template_color = cv2.resize(
+                                    template_color,
                                     (self.match_width, self.match_height),
                                 )
 
                             result = cv2.matchTemplate(
-                                upscaled_gray,
-                                template_gray,
+                                upscaled_region,
+                                template_color,
                                 cv2.TM_CCOEFF_NORMED,
                             )
                             _, max_val, _, _ = cv2.minMaxLoc(result)
