@@ -59,8 +59,8 @@ class ImageProcessor:
                     if set_name not in self.phash_templates:
                         self.phash_templates[set_name] = {}
                     for card_name, hex_hash in cards.items():
-                        self.phash_templates[set_name][card_name] = imagehash.hex_to_hash(
-                            hex_hash
+                        self.phash_templates[set_name][card_name] = (
+                            imagehash.hex_to_hash(hex_hash)
                         )
             logger.info(f"Loaded pHashes from {hash_file}")
             return True
@@ -337,7 +337,9 @@ class ImageProcessor:
             if forced_set:
                 logger.info(f"Four-card pack detected, forcing set to {forced_set}")
             if excluded_sets:
-                logger.info(f"{num_cards}-card pack detected, excluding sets: {excluded_sets}")
+                logger.info(
+                    f"{num_cards}-card pack detected, excluding sets: {excluded_sets}"
+                )
 
             # Stage 1: Initial identification for all cards
             initial_results = []
@@ -587,9 +589,7 @@ class ImageProcessor:
             # Filter indices based on force_set / exclude_sets
             if force_set:
                 indices = [
-                    i
-                    for i, m in enumerate(self.phash_metadata)
-                    if m[0] == force_set
+                    i for i, m in enumerate(self.phash_metadata) if m[0] == force_set
                 ]
             elif exclude_sets:
                 indices = [
@@ -688,9 +688,7 @@ class ImageProcessor:
         logger.info(f"Candidate sets for detailed search: {candidate_sets}")
 
         # Upscale card region to match matching resolution for detailed matching
-        upscaled_region = cv2.resize(
-            card_region, (self.match_width, self.match_height)
-        )
+        upscaled_region = cv2.resize(card_region, (self.match_width, self.match_height))
 
         # Normalize query region for correlation
         q_vec = upscaled_region.astype(np.float32).flatten()

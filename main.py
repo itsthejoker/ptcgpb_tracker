@@ -21,7 +21,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 basedir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 
 from app.main_window import MainWindow
-from app.utils import check_dependencies, initialize_data_directory, get_portable_path, get_app_version
+from app.utils import (
+    check_dependencies,
+    initialize_data_directory,
+    get_portable_path,
+    get_app_version,
+)
 
 
 def setup_logging():
@@ -38,7 +43,10 @@ def setup_logging():
                 pass
         handlers = [logging.FileHandler(log_file), logging.StreamHandler()]
     except Exception as e:
-        print(f"Warning: Could not initialize file logging at {log_file}: {e}", file=sys.stderr)
+        print(
+            f"Warning: Could not initialize file logging at {log_file}: {e}",
+            file=sys.stderr,
+        )
         handlers = [logging.StreamHandler()]
 
     logging.basicConfig(
@@ -78,17 +86,19 @@ def main():
     sizes = [16, 24, 32, 48, 64, 96, 128, 256, 512]
 
     for size in sizes:
-        icon.addFile(os.path.join(basedir, 'ptcgpb-companion-icon.ico'), QtCore.QSize(size, size))
+        icon.addFile(
+            os.path.join(basedir, "ptcgpb-companion-icon.ico"), QtCore.QSize(size, size)
+        )
 
     app.setWindowIcon(icon)
 
-    myappid = f'itsthejoker.ptcgpb-companion.{get_app_version()}'
-    if os.name == 'nt':
+    myappid = f"itsthejoker.ptcgpb-companion.{get_app_version()}"
+    if os.name == "nt":
         # windows-based witchcraft
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     # Set application style
-    app.setStyle('Fusion')
+    app.setStyle("Fusion")
 
     # Create and show main window
     try:

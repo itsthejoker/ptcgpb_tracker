@@ -67,6 +67,7 @@ def get_app_version():
     # Try getting version from package metadata first
     try:
         import importlib.metadata
+
         return importlib.metadata.version("ptcgpb-companion")
     except Exception:
         pass

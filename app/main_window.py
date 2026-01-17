@@ -75,7 +75,9 @@ class ScreenshotChangeHandler(FileSystemEventHandler):
     def on_any_event(self, event):
         if not event.is_directory:
             if event.event_type in ("created", "modified", "moved"):
-                logger.info(f"Watchdog detected {event.event_type} event: {event.src_path}")
+                logger.info(
+                    f"Watchdog detected {event.event_type} event: {event.src_path}"
+                )
                 self.has_changes = True
 
 
@@ -137,7 +139,10 @@ class MainWindow(QMainWindow):
 
         # Mark app as loaded in recent activity
         self.recent_activity_messages.append(
-            {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "description": "App loaded."}
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "description": "App loaded.",
+            }
         )
         self._update_recent_activity()
 
@@ -158,8 +163,12 @@ class MainWindow(QMainWindow):
                     "Card art images are missing. These are required for card recognition.\n\n"
                     "Would you like to download them now?"
                 )
-                download_button = msg_box.addButton("Download", QMessageBox.ButtonRole.AcceptRole)
-                quit_button = msg_box.addButton("Quit", QMessageBox.ButtonRole.RejectRole)
+                download_button = msg_box.addButton(
+                    "Download", QMessageBox.ButtonRole.AcceptRole
+                )
+                quit_button = msg_box.addButton(
+                    "Quit", QMessageBox.ButtonRole.RejectRole
+                )
                 msg_box.setDefaultButton(download_button)
                 msg_box.setIcon(QMessageBox.Icon.Question)
 
@@ -169,9 +178,7 @@ class MainWindow(QMainWindow):
                     logger.info("User chose to quit instead of downloading card art")
                     sys.exit(0)
 
-                self._update_status_message(
-                    "Downloading card art in background…"
-                )
+                self._update_status_message("Downloading card art in background…")
 
                 # Create a task entry so it appears in Processing tab & counter
                 import uuid
@@ -507,18 +514,18 @@ class MainWindow(QMainWindow):
 
             # 3. Add active tasks last (so they are at the bottom)
             active_tasks = [
-                t
-                for t in self.processing_tasks
-                if t["status"] in ["Running", "Queued"]
+                t for t in self.processing_tasks if t["status"] in ["Running", "Queued"]
             ]
             for task in active_tasks:
                 progress_text = (
                     f" ({task['progress']}%)" if task["status"] == "Running" else ""
                 )
-                item_text = (
-                    f"[{task['status']}] {task['description']}{progress_text}"
+                item_text = f"[{task['status']}] {task['description']}{progress_text}"
+                color = (
+                    Qt.GlobalColor.blue
+                    if task["status"] == "Running"
+                    else Qt.GlobalColor.darkYellow
                 )
-                color = Qt.GlobalColor.blue if task["status"] == "Running" else Qt.GlobalColor.darkYellow
                 all_items.append({"text": item_text, "color": color})
 
             # 4. Add update message if available
@@ -801,7 +808,10 @@ class MainWindow(QMainWindow):
         self.session_start_time = datetime.now().isoformat()
         # In-memory session log for status messages to surface in Recent Activity
         self.recent_activity_messages = [
-            {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "description": "Loading app..."}
+            {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "description": "Loading app...",
+            }
         ]
 
     def _clear_recent_activity(self):
@@ -1062,12 +1072,12 @@ class MainWindow(QMainWindow):
             current_rarity = self.rarity_filter.currentText()
             self.rarity_filter.clear()
             self.rarity_filter.addItem("All Rarities")
-            
+
             # Sort rarities according to the order in RARITY_MAP
             rarity_order = list(RARITY_MAP.values())
             sorted_rarities = sorted(
                 rarities,
-                key=lambda r: rarity_order.index(r) if r in rarity_order else 999
+                key=lambda r: rarity_order.index(r) if r in rarity_order else 999,
             )
             for rarity in sorted_rarities:
                 self.rarity_filter.addItem(rarity)
@@ -1616,7 +1626,9 @@ class MainWindow(QMainWindow):
             self._combined_import_request
             and self._combined_import_request.get("csv_task_id") == task_id
         ):
-            self._update_status_message("Starting screenshot processing from saved directory…")
+            self._update_status_message(
+                "Starting screenshot processing from saved directory…"
+            )
             self._start_combined_screenshot_step()
 
     def _on_csv_import_error(self, error: str, task_id: str = None):
@@ -1749,9 +1761,8 @@ class MainWindow(QMainWindow):
         # Clear progress indicators
         self._clear_progress()
 
-        if (
-            self._combined_import_request
-            and self._combined_import_request.get("screenshot_task_id")
+        if self._combined_import_request and self._combined_import_request.get(
+            "screenshot_task_id"
         ):
             # Leave status message from result/error; just clear state here
             self._combined_import_request = None
@@ -1767,13 +1778,16 @@ class MainWindow(QMainWindow):
                 total_packs = self.db.get_total_packs_count()
                 if total_packs == 0:
                     from PyQt6.QtWidgets import QMessageBox
+
                     QMessageBox.warning(
                         self,
                         "Missing Screenshot Data",
                         "No screenshot records found in database. Please import a CSV file first (File -> Import CSV) "
-                        "before processing screenshots."
+                        "before processing screenshots.",
                     )
-                    self._update_status_message("Aborted screenshot processing: No screenshot records in database")
+                    self._update_status_message(
+                        "Aborted screenshot processing: No screenshot records in database"
+                    )
                     return
             else:
                 self._update_status_message("Database not available")
@@ -1969,7 +1983,7 @@ class MainWindow(QMainWindow):
             self._watchdog_handler.has_changes = True
             self._check_for_screenshot_changes()
         else:
-            # If something is already running, we don't need to force it, 
+            # If something is already running, we don't need to force it,
             # it's already doing a scan.
             logger.info("Catch-up scan skipped: processing already in progress.")
 
@@ -2020,9 +2034,7 @@ class MainWindow(QMainWindow):
                         self._watchdog_handler, watch_dir, recursive=False
                     )
                     observer.start()
-                    logger.info(
-                        f"Watchdog background thread started for {watch_dir}"
-                    )
+                    logger.info(f"Watchdog background thread started for {watch_dir}")
                 except Exception as e:
                     logger.error(f"Failed to start watchdog observer thread: {e}")
 
@@ -2043,11 +2055,13 @@ class MainWindow(QMainWindow):
         logger.debug("Checking for screenshot changes flag...")
         if not self._watchdog_handler.has_changes:
             return
-        
+
         # Don't start processing if the window hasn't been shown yet or just shown
         # This helps avoid a hang immediately on startup if there are pending changes
         if not self.isVisible():
-            logger.info("Screenshot changes detected, but window is not yet visible. Delaying.")
+            logger.info(
+                "Screenshot changes detected, but window is not yet visible. Delaying."
+            )
             return
 
         logger.debug("Changes detected in screenshots directory.")
@@ -2058,7 +2072,9 @@ class MainWindow(QMainWindow):
             )
             return
 
-        logger.info("Screenshot changes detected by watchdog. Triggering processing job.")
+        logger.info(
+            "Screenshot changes detected by watchdog. Triggering processing job."
+        )
 
         self._watchdog_handler.has_changes = False
 
@@ -2072,14 +2088,15 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle window close event"""
         print("Closing application...")
-        
+
         # Display the closing message
         self._update_status_message(
             "Closing application. Cleaning up... this may take a moment."
         )
-        
+
         # Force the UI to process the status update
         from PyQt6.QtWidgets import QApplication
+
         QApplication.processEvents()
 
         # Perform cleanup

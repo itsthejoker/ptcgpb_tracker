@@ -55,7 +55,7 @@ class Database:
     def transaction(self):
         """
         Context manager for database transactions.
-        
+
         Usage:
             with db.transaction():
                 db.add_screenshot(...)
@@ -138,12 +138,15 @@ class Database:
             cursor.execute("PRAGMA table_info(cards)")
             columns = [row[1] for row in cursor.fetchall()]
             if "card_code" not in columns:
-                logger.info("Migrating database: Adding card_code column to cards table")
+                logger.info(
+                    "Migrating database: Adding card_code column to cards table"
+                )
                 try:
                     # SQLite doesn't support dropping/modifying UNIQUE constraints easily.
                     # The safest way is to recreate the table.
                     cursor.execute("ALTER TABLE cards RENAME TO cards_old")
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         CREATE TABLE cards (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             card_name TEXT,
@@ -154,10 +157,13 @@ class Database:
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(card_code, card_set)
                         )
-                    """)
-                    
+                    """
+                    )
+
                     # Copy data and try to infer card_code from image_path
-                    cursor.execute("SELECT id, card_name, card_set, image_path, rarity, created_at FROM cards_old")
+                    cursor.execute(
+                        "SELECT id, card_name, card_set, image_path, rarity, created_at FROM cards_old"
+                    )
                     for row in cursor.fetchall():
                         cid, name, cset, img_path, rarity, created = row
                         # Infer code from image_path: "A2b/A2b_80.webp" -> "A2b_80"
@@ -165,15 +171,18 @@ class Database:
                         if img_path:
                             base = os.path.basename(img_path)
                             code = os.path.splitext(base)[0]
-                        
+
                         if not code:
                             code = f"{cset}_{name}"
-                            
-                        cursor.execute("""
+
+                        cursor.execute(
+                            """
                             INSERT INTO cards (id, card_name, card_set, card_code, image_path, rarity, created_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (cid, name, cset, code, img_path, rarity, created))
-                    
+                        """,
+                            (cid, name, cset, code, img_path, rarity, created),
+                        )
+
                     cursor.execute("DROP TABLE cards_old")
                     logger.info("Database migration: cards table updated successfully")
                 except Exception as e:

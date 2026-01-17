@@ -390,7 +390,7 @@ class PreferencesDialog(QDialog):
         }
 
         keys = self._settings.settings.allKeys()
-        
+
         # Group keys by section
         sections_map = {}
         for key in keys:
@@ -420,7 +420,9 @@ class PreferencesDialog(QDialog):
             # Add a section header
             header_text = section.upper() if section else "OTHER"
             header_label = QLabel(header_text)
-            header_label.setStyleSheet("font-weight: bold; color: #555; margin-top: 10px;")
+            header_label.setStyleSheet(
+                "font-weight: bold; color: #555; margin-top: 10px;"
+            )
             self.form_layout.addRow(header_label)
             current_section = section
 

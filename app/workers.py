@@ -30,7 +30,6 @@ def get_max_thread_count():
     return min(max(1, cpu_count - 1), 8)
 
 
-
 class WorkerSignals(QObject):
     """Signals available from worker threads"""
 
@@ -95,8 +94,8 @@ class CSVImportWorker(QRunnable):
             for i in range(0, total_rows, batch_size):
                 if self._is_cancelled:
                     break
-                
-                batch = rows[i:i + batch_size]
+
+                batch = rows[i : i + batch_size]
                 with db.transaction():
                     for row in batch:
                         if self._is_cancelled:
@@ -112,9 +111,15 @@ class CSVImportWorker(QRunnable):
 
                         # Ensure all required fields exist
                         required_fields = [
-                            "Timestamp", "OriginalFilename", "CleanFilename",
-                            "Account", "PackType", "CardTypes", "CardCounts",
-                            "PackScreenshot", "Shinedust",
+                            "Timestamp",
+                            "OriginalFilename",
+                            "CleanFilename",
+                            "Account",
+                            "PackType",
+                            "CardTypes",
+                            "CardCounts",
+                            "PackScreenshot",
+                            "Shinedust",
                         ]
                         for field in required_fields:
                             if field not in row:
@@ -164,6 +169,7 @@ class CSVImportWorker(QRunnable):
                 executor.shutdown(wait=False, cancel_futures=True)
             except Exception:
                 pass
+
 
 class CardArtDownloadWorker(QRunnable):
     """Worker to download card art templates in the background.
@@ -284,7 +290,9 @@ class CardArtDownloadWorker(QRunnable):
             total_saved = 0
             self._executor = ThreadPoolExecutor(max_workers=self.max_workers)
             try:
-                futures = {self._executor.submit(download_set, sid): sid for sid in set_ids}
+                futures = {
+                    self._executor.submit(download_set, sid): sid for sid in set_ids
+                }
                 for fut in as_completed(futures):
                     if self._is_cancelled:
                         if self._executor:
@@ -306,7 +314,9 @@ class CardArtDownloadWorker(QRunnable):
                         self.signals.status.emit(f"Error downloading set {sid}: {e}")
             finally:
                 if self._executor:
-                    self._executor.shutdown(wait=not self._is_cancelled, cancel_futures=self._is_cancelled)
+                    self._executor.shutdown(
+                        wait=not self._is_cancelled, cancel_futures=self._is_cancelled
+                    )
                     self._executor = None
 
             self.signals.progress.emit(total_estimate, total_estimate)
@@ -317,14 +327,18 @@ class CardArtDownloadWorker(QRunnable):
             # Precompute pHashes for downloaded cards
             if total_saved > 0 and not self._is_cancelled:
                 try:
-                    self.signals.status.emit("Precomputing pHashes for downloaded cards...")
+                    self.signals.status.emit(
+                        "Precomputing pHashes for downloaded cards..."
+                    )
                     from app.image_processing import ImageProcessor
 
                     processor = ImageProcessor(dest_root)
                     self.signals.status.emit("pHashes precomputed and saved.")
                 except Exception as e:
                     logger.error(f"Failed to precompute pHashes: {e}")
-                    self.signals.status.emit(f"Warning: Failed to precompute pHashes: {e}")
+                    self.signals.status.emit(
+                        f"Warning: Failed to precompute pHashes: {e}"
+                    )
 
             self.signals.result.emit(
                 {
@@ -422,7 +436,9 @@ class ScreenshotProcessingWorker(QRunnable):
                 else:
                     raise ValueError("No image files found in directory")
 
-            self.signals.status.emit(f"Found {total_files} images to process. Loading workers...")
+            self.signals.status.emit(
+                f"Found {total_files} images to process. Loading workers..."
+            )
 
             # Initialize image processor
             from app.image_processing import ImageProcessor
@@ -648,7 +664,9 @@ class ScreenshotProcessingWorker(QRunnable):
                     if not is_new and not self.overwrite:
                         # If the screenshot already exists, check if it's already been processed
                         # This allows processing screenshots that were imported via CSV but not yet analyzed
-                        if db.check_screenshot_exists(filename, screenshot_data["Account"]):
+                        if db.check_screenshot_exists(
+                            filename, screenshot_data["Account"]
+                        ):
                             self.signals.status.emit(
                                 f"Skipping {filename}: Already processed in database"
                             )
@@ -699,17 +717,19 @@ class ScreenshotProcessingWorker(QRunnable):
 
                     # Mark screenshot as processed
                     db.mark_screenshot_processed(screenshot_id)
-                
+
                 # If we reached here, success!
                 return
 
             except Exception as e:
                 if "database is locked" in str(e).lower() and attempt < max_retries - 1:
-                    logger.warning(f"Database locked while storing {filename}, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                    logger.warning(
+                        f"Database locked while storing {filename}, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})"
+                    )
                     time.sleep(retry_delay)
                     # Exponential backoff could be used here: retry_delay *= 2
                     continue
-                
+
                 logger.error(f"Error storing results for {filename}: {e}")
                 raise
 
@@ -920,7 +940,9 @@ class VersionCheckWorker(QRunnable):
                 else:
                     self.signals.result.emit({"new_available": False})
             else:
-                logger.warning(f"GitHub API returned status code {response.status_code}")
+                logger.warning(
+                    f"GitHub API returned status code {response.status_code}"
+                )
                 self.signals.result.emit({"new_available": False})
         except Exception as e:
             logger.error(f"Error checking for updates: {e}")
