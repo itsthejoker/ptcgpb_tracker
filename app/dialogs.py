@@ -550,11 +550,11 @@ class CardImageDialog(QDialog):
     """Dialog for displaying a full-size card image"""
 
     def __init__(
-        self,
-        image_path: str,
-        card_name: str = "Card Image",
-        parent=None,
-        scale: float = 1.0,
+            self,
+            image_path: str,
+            card_name: str = "Card Image",
+            parent=None,
+            scale: float = 1.0,
     ):
         super().__init__(parent)
         self.setWindowTitle(card_name)
@@ -613,17 +613,48 @@ class CardImageDialog(QDialog):
         self.resize(dialog_width, dialog_height)
 
 
+class NumericTableWidgetItem(QTableWidgetItem):
+    """Custom QTableWidgetItem for numeric sorting"""
+
+    def __init__(self, value, is_age=False):
+        if value is None or (isinstance(value, str) and not value.strip()):
+            self.sort_value = -1 if not is_age else -1
+            display_value = "-"
+        elif is_age:
+            # For age, value is like "5d"
+            try:
+                self.sort_value = int(value.replace("d", ""))
+                display_value = value
+            except (ValueError, AttributeError):
+                self.sort_value = -1
+                display_value = "-"
+        else:
+            try:
+                self.sort_value = int(value)
+                display_value = str(value)
+            except (ValueError, TypeError):
+                self.sort_value = -1
+                display_value = "-"
+
+        super().__init__(display_value)
+
+    def __lt__(self, other):
+        if isinstance(other, NumericTableWidgetItem):
+            return self.sort_value < other.sort_value
+        return super().__lt__(other)
+
+
 class AccountCardListDialog(QDialog):
     """Dialog showing a filterable list of accounts that have a specific card"""
 
     def __init__(
-        self,
-        card_name: str,
-        card_code: str,
-        account_data: list,
-        database=None,
-        on_removed: Callable = None,
-        parent=None,
+            self,
+            card_name: str,
+            card_code: str,
+            account_data: list,
+            database=None,
+            on_removed: Callable = None,
+            parent=None,
     ):
         super().__init__(parent)
         self.setWindowTitle(f"Accounts owning {card_name}")
@@ -685,6 +716,7 @@ class AccountCardListDialog(QDialog):
         )
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setSortingEnabled(True)
         layout.addWidget(self.table)
 
         # Close button
@@ -694,6 +726,7 @@ class AccountCardListDialog(QDialog):
 
     def _populate_table(self, data):
         """Populate table with data"""
+        self.table.setSortingEnabled(False)
         self.table.setRowCount(len(data))
         for i, row_data in enumerate(data):
             account = row_data[0]
@@ -702,15 +735,13 @@ class AccountCardListDialog(QDialog):
             shinedust = row_data[3] if len(row_data) > 3 else None
 
             self.table.setItem(i, 0, QTableWidgetItem(str(account)))
-            count_item = QTableWidgetItem(str(count))
+
+            count_item = NumericTableWidgetItem(count)
             count_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(i, 1, count_item)
 
             # Shinedust column
-            shinedust_val = (
-                str(shinedust) if shinedust and str(shinedust).strip() else "-"
-            )
-            shinedust_item = QTableWidgetItem(shinedust_val)
+            shinedust_item = NumericTableWidgetItem(shinedust)
             shinedust_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(i, 2, shinedust_item)
 
@@ -723,7 +754,7 @@ class AccountCardListDialog(QDialog):
                 age_val = f"{diff.days}d"
             except (ValueError, TypeError):
                 pass
-            age_item = QTableWidgetItem(age_val)
+            age_item = NumericTableWidgetItem(age_val, is_age=True)
             age_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(i, 3, age_item)
 
@@ -743,6 +774,7 @@ class AccountCardListDialog(QDialog):
                 lambda checked, a=account, p=screenshot_path: self._remove_card(a, p)
             )
             self.table.setCellWidget(i, 5, remove_button)
+        self.table.setSortingEnabled(True)
 
     def _view_screenshot(self, path):
         """Open the screenshot in a new window"""
@@ -791,7 +823,7 @@ class AccountCardListDialog(QDialog):
 
                         # Match by account AND screenshot path if possible
                         if acc == account_name and (
-                            screenshot_path is None or spath == screenshot_path
+                                screenshot_path is None or spath == screenshot_path
                         ):
                             if count > 1:
                                 # Preserve all columns, just update count
