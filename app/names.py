@@ -1,14 +1,3 @@
-rarity = {
-    "1D": "Common",
-    "2D": "Uncommon",
-    "3D": "Rare",
-    "4D": "Double Rare",
-    "1S": "Illustration Rare",
-    "2S": "Super / Special Rare",
-    "3S": "Immersive",
-    "CR": "Crown Rare",
-}
-
 SHINEDUST_REQUIREMENTS = {
     "1D": 0,
     "2D": 0,
@@ -18,51 +7,6 @@ SHINEDUST_REQUIREMENTS = {
     "1SS": 10_000,
     "2S": 25_000,
     "2SS": 30_000,
-}
-
-sets = {
-    "A1": "Genetic Apex",
-    "A1a": "Mythical Island",
-    "A2": "Space-Time Smackdown",
-    "A2a": "Triumphant Light",
-    "A2b": "Shining Revelry",
-    "A3": "Celestial Guardians",
-    "A3a": "Extradimensional Crisis",
-    "A3b": "Eevee Grove",
-    "A4": "Wisdom of Sea and Sky",
-    "A4a": "Secluded Springs",
-    "A4b": "Deluxe Pack Ex",
-    "B1": "Mega Rising",
-    "B1a": "Crimson Blaze",
-    "B2": "Fantastical Parade",
-    "P-A": "Promo A",
-    "P-B": "Promo B",
-}
-
-ptcgpb_set_translation = {
-    "CrimsonBlaze": "B1a",
-    "Deluxe": "A4b",
-    "Deluxe Pack Ex": "A4b",
-    "Mewtwo": "A1",
-    "Eevee": "A3b",
-    "Shining": "A2a",
-    "Springs": "A4a",
-    "Buzzwole": "A3a",
-    "Mew": "A1a",
-    "Lunala": "A3",
-    "Lugia": "A4",
-    "Arceus": "A2a",
-    "MegaBlaziken": "B1",
-    "Solgaleo": "A3",
-    "HoOh": "A4",
-    "MegaAltaria": "B1",
-    "Charizard": "A1",
-    "Dialga": "A2",
-    "Pikachu": "A1",
-    "Palkia": "A2",
-    "MegaGyarados": "B1",
-    # just a guess as to what it's going to be called
-    "Gardevoir": "B2",
 }
 
 cards = {

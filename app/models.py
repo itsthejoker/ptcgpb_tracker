@@ -7,11 +7,6 @@ import os
 
 from settings import BASE_DIR
 
-# from app.db.models import Card
-
-# Define rarity order for sorting
-# RARITY_ORDER = {name: i for i, name in enumerate(Card.Rarity.values())}
-
 
 class CardModel(QAbstractTableModel):
     """Model for displaying cards in QTableView"""

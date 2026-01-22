@@ -37,7 +37,6 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 from app.models import CardModel, ProcessingTaskModel
-from app.names import cards as CARD_NAMES, sets as SET_NAMES, rarity as RARITY_MAP
 
 from app.dialogs import (
     CSVImportDialog,
@@ -899,12 +898,8 @@ class MainWindow(QMainWindow):
         # Initially size to contents, then allow interactive resizing
         self.cards_table.setColumnWidth(3, 100)
         self.cards_table.setColumnWidth(4, 60)
-        horizontal_header.setSectionResizeMode(
-            3, QHeaderView.ResizeMode.Interactive
-        )
-        horizontal_header.setSectionResizeMode(
-            4, QHeaderView.ResizeMode.Interactive
-        )
+        horizontal_header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
+        horizontal_header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
 
         # Ensure the art column remains just wider than the icon size
         icon_width = self.cards_table.iconSize().width()
@@ -1039,6 +1034,11 @@ class MainWindow(QMainWindow):
 
     def _update_filter_options(self, card_data):
         """Update filter options based on available data"""
+        from app.db.models import Card, CardSet
+
+        RARITY_MAP = dict(zip(Card.Rarity.values, Card.Rarity.labels))
+        SET_MAP = CardSet.name_map()
+
         try:
             # Block signals during bulk update
             self.set_filter.blockSignals(True)
@@ -1053,7 +1053,12 @@ class MainWindow(QMainWindow):
             current_set = self.set_filter.currentText()
             self.set_filter.clear()
             self.set_filter.addItem(self.tr("All Sets"))
-            for set_name in sorted(sets):
+            set_order = list(SET_MAP.values())
+            sorted_sets = sorted(
+                sets,
+                key=lambda s: set_order.index(s) if s in set_order else 999,
+            )
+            for set_name in sorted_sets:
                 self.set_filter.addItem(set_name)
 
             # Restore previous selection if possible
@@ -1515,7 +1520,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 self.tr("Load New Data"),
-                self.tr("A data import is already in progress. Please wait for it to finish."),
+                self.tr(
+                    "A data import is already in progress. Please wait for it to finish."
+                ),
             )
             return
 
@@ -1530,7 +1537,11 @@ class MainWindow(QMainWindow):
         if not screenshots_dir:
             issues.append(self.tr("Screenshots directory is not set."))
         elif not os.path.isdir(screenshots_dir):
-            issues.append(self.tr("Screenshots directory not found: %1").replace("%1", screenshots_dir))
+            issues.append(
+                self.tr("Screenshots directory not found: %1").replace(
+                    "%1", screenshots_dir
+                )
+            )
 
         if issues:
             QMessageBox.warning(
@@ -1538,7 +1549,9 @@ class MainWindow(QMainWindow):
                 self.tr("Load New Data"),
                 "\n".join(issues)
                 + "\n\n"
-                + self.tr("Please use the Import CSV or Process Screenshots options to set the correct locations."),
+                + self.tr(
+                    "Please use the Import CSV or Process Screenshots options to set the correct locations."
+                ),
             )
             self._update_load_new_data_availability()
             return
@@ -1791,7 +1804,9 @@ class MainWindow(QMainWindow):
                         if os.path.exists(new_path):
                             os.remove(new_path)
                         os.rename(old_db_path, new_path)
-                        logger.info(f"Migration complete. Renamed {old_db_path} to {new_path}")
+                        logger.info(
+                            f"Migration complete. Renamed {old_db_path} to {new_path}"
+                        )
                 except Exception as e:
                     logger.error(f"Failed to rename old database after migration: {e}")
                 finally:
@@ -2223,6 +2238,10 @@ class MainWindow(QMainWindow):
         Returns:
             tuple: (display_name, display_rarity)
         """
+        from app.db.models import Card
+
+        RARITY_MAP = dict(zip(Card.Rarity.values, Card.Rarity.labels))
+
         full_name = raw_name if raw_name else card_code
         display_name = clean_card_name(full_name)
         display_rarity = raw_rarity

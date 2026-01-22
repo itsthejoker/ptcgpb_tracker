@@ -17,34 +17,54 @@ class CardSet(models.TextChoices):
     DELUXE_PACK_EX = "A4b", "Deluxe Pack Ex"
     MEGA_RISING = "B1", "Mega Rising"
     CRIMSON_BLAZE = "B1a", "Crimson Blaze"
+    FANTASTICAL_PARADE = "B2", "Fantastical Parade"
     PROMO_A = "P-A", "Promo A"
     PROMO_B = "P-B", "Promo B"
+
+    @staticmethod
+    def name_map():
+        return dict(reversed(list(dict(zip(CardSet.values, CardSet.labels)).items())))
 
 
 def translate_set_name(set_name):
     ptcgpb_names = {
-        "CrimsonBlaze": "B1a",
+        # Genetic Apex
+        "Charizard": "A1",
+        "Mewtwo": "A1",
+        "Pikachu": "A1",
+        # Mythical Island
+        "Mew": "A1a",
+        # Space-Time Smackdown
+        "Palkia": "A2",
+        "Dialga": "A2",
+        # Triumphant Light
+        "Arceus": "A2a",
+        # Shining Revelry
+        "Shining": "A2b",
+        # Celestial Guardians
+        "Lunala": "A3",
+        "Solgaleo": "A3",
+        # Extradimensional Crisis
+        "Buzzwole": "A3a",
+        # Eevee Grove
+        "Eevee": "A3b",
+        # Wisdom of Sea and Sky
+        "HoOh": "A4",
+        "Lugia": "A4",
+        # Secluded Springs
+        "Springs": "A4a",
+        # Deluxe Pack: ex
         "Deluxe": "A4b",
         "Deluxe Pack Ex": "A4b",
-        "Mewtwo": "A1",
-        "Eevee": "A3b",
-        "Shining": "A2a",
-        "Springs": "A4a",
-        "Buzzwole": "A3a",
-        "Mew": "A1a",
-        "Lunala": "A3",
-        "Lugia": "A4",
-        "Arceus": "A2a",
-        "MegaBlaziken": "B1",
-        "Solgaleo": "A3",
-        "HoOh": "A4",
-        "MegaAltaria": "B1",
-        "Charizard": "A1",
-        "Dialga": "A2",
-        "Pikachu": "A1",
-        "Palkia": "A2",
-        "MegaGyarados": "B1",
+        # Mega Rising
         "Mega Rising": "B1",  # Why do we have an extra value for the general pack?
+        "MegaBlaziken": "B1",
+        "MegaGyarados": "B1",
+        "MegaAltaria": "B1",
+        # Crimson Blaze
+        "CrimsonBlaze": "B1a",
+        # Fantastical Parade
+        "Parade": "B2",
     }
     return ptcgpb_names.get(set_name, None)
 
@@ -87,6 +107,10 @@ class Card(models.Model):
         SUPER_SPECIAL_RARE = "2S", "Super / Special Rare"
         IMMERSIVE = "3S", "Immersive"
         CROWN_RARE = "CR", "Crown Rare"
+
+        @staticmethod
+        def rarity_map():
+            return dict(zip(Card.Rarity.values, Card.Rarity.labels))
 
     name = models.CharField(max_length=255, null=True, blank=True)
     set = models.CharField(

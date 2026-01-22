@@ -351,8 +351,10 @@ class CardArtDownloadWorker(QRunnable):
             from app.db.models import Card, CardSet
             from app.names import (
                 cards as CARD_NAMES_MAP,
-                rarity as RARITY_MAP,
             )
+            from app.db.models import Card
+
+            rarity = dict(zip(Card.Rarity.values, Card.Rarity.labels))
 
             self.signals.status.emit(
                 QCoreApplication.translate(
@@ -405,6 +407,10 @@ class CardArtDownloadWorker(QRunnable):
             )
 
             def download_set(set_id: str) -> int:
+                from app.db.models import Card
+
+                RARITY_MAP = dict(zip(Card.Rarity.values, Card.Rarity.labels))
+
                 # Use a child logger that includes the thread name
                 logger = self.logger.getChild(threading.current_thread().name)
 
@@ -1185,21 +1191,17 @@ class CardDataLoadWorker(QRunnable):
             )
 
             # Lazy imports to avoid unnecessary main-thread initialization
-            from app.db.models import Card
-            from app.names import (
-                sets as SET_NAMES,
-                rarity as RARITY_MAP,
-            )
+            from app.db.models import Card, CardSet
 
-            # Build query based on account filter if provided
+            rarity_map = Card.Rarity.rarity_map()
+            set_names = CardSet.name_map()
+
             query = Card.objects.all()
             if self.account_filter:
-                # Assuming ScreenshotCard links Card to Screenshot, and Screenshot links to Account
                 query = query.filter(
                     screenshotcard__screenshot__account__name=self.account_filter
                 )
 
-            # Annotate with total count
             query = query.annotate(total_count=Count("screenshotcard"))
 
             total = query.count()
@@ -1217,13 +1219,13 @@ class CardDataLoadWorker(QRunnable):
 
                 # card.rarity is the code (e.g. "1D"), we want the display name
                 display_rarity = (
-                    RARITY_MAP.get(card.rarity, card.rarity) if card.rarity else ""
+                    rarity_map.get(card.rarity, card.rarity) if card.rarity else ""
                 )
 
                 card_info = {
                     "card_code": card.code,
                     "card_name": clean_card_name(card.name),
-                    "set_name": SET_NAMES.get(card.set, card.set) or "",
+                    "set_name": set_names.get(card.set, card.set) or "",
                     "rarity": display_rarity,
                     "count": getattr(card, "total_count", 0),
                     "image_path": card.image_path,
@@ -1236,9 +1238,9 @@ class CardDataLoadWorker(QRunnable):
 
             self.signals.progress.emit(total, total)
             self.signals.status.emit(
-                QCoreApplication.translate("CardDataLoadWorker", "Loaded %1 cards").replace("%1", 
-                    str(total)
-                )
+                QCoreApplication.translate(
+                    "CardDataLoadWorker", "Loaded %1 cards"
+                ).replace("%1", str(total))
             )
             self.signals.result.emit(data)
 
