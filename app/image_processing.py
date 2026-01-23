@@ -157,10 +157,9 @@ class ImageProcessor:
         """Load and preprocess a single card image at full resolution"""
         try:
             # Load image using PIL and convert to RGB
-            pil_image = Image.open(card_path)
-
-            # Convert to numpy array
-            image = np.array(pil_image)
+            with Image.open(card_path) as pil_image:
+                # Convert to numpy array
+                image = np.array(pil_image)
 
             # Convert to RGB if needed (from RGBA or grayscale)
             if len(image.shape) == 3 and image.shape[2] == 4:  # RGBA
@@ -179,8 +178,8 @@ class ImageProcessor:
         """Load and preprocess a screenshot image"""
         try:
             # Load image
-            pil_image = Image.open(screenshot_path)
-            image = np.array(pil_image)
+            with Image.open(screenshot_path) as pil_image:
+                image = np.array(pil_image)
 
             # Convert to RGB if needed (from RGBA)
             if len(image.shape) == 3 and image.shape[2] == 4:  # RGBA

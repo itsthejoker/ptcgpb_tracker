@@ -749,7 +749,7 @@ class ScreenshotProcessingWorker(QRunnable):
                 raise
 
             # Process images in parallel using ThreadPoolExecutor for better performance
-            from concurrent.futures import ThreadPoolExecutor, as_completed
+            from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
             max_workers = get_max_thread_count()
             processed_count = 0
@@ -817,14 +817,25 @@ class ScreenshotProcessingWorker(QRunnable):
                 thread_name_prefix=f"ImgProc-{self.task_id or 'pool'}",
             )
             try:
-                # Submit all tasks
-                future_to_file = {
-                    self._executor.submit(process_single_file, filename): filename
-                    for filename in image_files
-                }
+                max_in_flight = max(1, max_workers * 4)
+                file_iter = iter(image_files)
+                future_to_file = {}
 
-                # Process results as they complete
-                for future in as_completed(future_to_file):
+                def submit_next():
+                    try:
+                        next_file = next(file_iter)
+                    except StopIteration:
+                        return False
+                    future_to_file[
+                        self._executor.submit(process_single_file, next_file)
+                    ] = next_file
+                    return True
+
+                while len(future_to_file) < max_in_flight and submit_next():
+                    pass
+
+                # Process results as they complete, keeping a bounded queue
+                while future_to_file:
                     if self._is_cancelled:
                         # Attempt to cancel remaining tasks without blocking
                         self._shutdown_executor(wait=False, cancel_futures=True)
@@ -836,34 +847,42 @@ class ScreenshotProcessingWorker(QRunnable):
                         )
                         return
 
-                    try:
-                        result = future.result()
-                        if result is True:
-                            successful_files += 1
-                    except Exception as e:
-                        filename = future_to_file[future]
-                        self.signals.status.emit(
-                            QCoreApplication.translate(
-                                "ScreenshotProcessingWorker",
-                                "Critical error processing %1: %2",
+                    done, _ = wait(future_to_file, return_when=FIRST_COMPLETED)
+                    for future in done:
+                        filename = future_to_file.pop(future)
+                        try:
+                            result = future.result()
+                            if result is True:
+                                successful_files += 1
+                        except Exception as e:
+                            self.signals.status.emit(
+                                QCoreApplication.translate(
+                                    "ScreenshotProcessingWorker",
+                                    "Critical error processing %1: %2",
+                                )
+                                .replace("%1", filename)
+                                .replace("%2", str(e))
                             )
-                            .replace("%1", filename)
-                            .replace("%2", str(e))
-                        )
 
-                    processed_count += 1
+                        processed_count += 1
 
-                    # Update progress every 5 files or at the end
-                    if processed_count % 5 == 0 or processed_count == total_files:
-                        self.signals.progress.emit(processed_count, total_files)
-                        self.signals.status.emit(
-                            QCoreApplication.translate(
-                                "ScreenshotProcessingWorker",
-                                "Processed %1 of %2 images",
+                        # Update progress every 5 files or at the end
+                        if (
+                            processed_count % 5 == 0
+                            or processed_count == total_files
+                        ):
+                            self.signals.progress.emit(processed_count, total_files)
+                            self.signals.status.emit(
+                                QCoreApplication.translate(
+                                    "ScreenshotProcessingWorker",
+                                    "Processed %1 of %2 images",
+                                )
+                                .replace("%1", str(processed_count))
+                                .replace("%2", str(total_files))
                             )
-                            .replace("%1", str(processed_count))
-                            .replace("%2", str(total_files))
-                        )
+
+                        while len(future_to_file) < max_in_flight and submit_next():
+                            pass
             finally:
                 # Ensure executor threads are cleaned up appropriately
                 self._shutdown_executor(
