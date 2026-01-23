@@ -15,9 +15,6 @@ import logging
 import threading
 
 
-def _set_thread_daemon():
-    """Helper to set the current thread as daemon"""
-    threading.current_thread().daemon = True
 
 
 from django.db.models import Count
@@ -502,7 +499,6 @@ class CardArtDownloadWorker(QRunnable):
             self._executor = ThreadPoolExecutor(
                 max_workers=self.max_workers,
                 thread_name_prefix=f"ArtDL-{self.task_id or 'pool'}",
-                initializer=_set_thread_daemon,
             )
             try:
                 futures = {
@@ -815,7 +811,6 @@ class ScreenshotProcessingWorker(QRunnable):
             self._executor = ThreadPoolExecutor(
                 max_workers=max_workers,
                 thread_name_prefix=f"ImgProc-{self.task_id or 'pool'}",
-                initializer=_set_thread_daemon,
             )
             try:
                 # Submit all tasks
