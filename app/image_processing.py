@@ -216,7 +216,7 @@ class ImageProcessor:
                 if self.card_database:
                     self._prepare_templates()  # Optimization: Pre-calculate versions
                     template_count = self.get_template_count()
-                    logger.info(f"Successfully loaded {template_count} card templates")
+                    logger.debug(f"Successfully loaded {template_count} card templates")
                     self.loaded = True
                 else:
                     raise ValueError(f"No valid card templates found in {template_dir}")
@@ -381,7 +381,7 @@ class ImageProcessor:
                         display_name = self._get_display_name(
                             best_match["card_name"], best_match["card_set"]
                         )
-                        logger.info(
+                        logger.debug(
                             f"Card {i+1}: {display_name} (confidence: {best_match['confidence']:.2f})"
                         )
 
@@ -399,9 +399,9 @@ class ImageProcessor:
                             }
                         )
                     else:
-                        logger.info(f"No card match found for position {i+1}")
+                        logger.debug(f"No card match found for position {i+1}")
 
-                logger.info(f"Found {len(detected_cards)} cards in {image_path}")
+                logger.debug(f"Found {len(detected_cards)} cards in {image_path}")
                 return detected_cards
 
             except Exception as e:
@@ -620,7 +620,7 @@ class ImageProcessor:
             and quick_best_match
             and quick_best_match["confidence"] >= CONFIDENCE_THRESHOLD
         ):
-            logger.info(
+            logger.debug(
                 f"Quick search extremely confident ({quick_best_match['confidence']:.3f}), skipping detailed search"
             )
             return quick_best_match
@@ -642,8 +642,6 @@ class ImageProcessor:
                 # Cap at 5 sets to maintain performance
                 if len(candidate_sets) >= 5:
                     break
-
-        # logger.info(f"Candidate sets for detailed search: {candidate_sets}")
 
         # Upscale card region to match matching resolution for detailed matching
         upscaled_region = cv2.resize(card_region, (self.match_width, self.match_height))

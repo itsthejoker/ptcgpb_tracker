@@ -355,26 +355,26 @@
     <context>
         <name>CardDataLoadWorker</name>
         <message>
-            <location filename="../workers.py" line="1270" />
-            <location filename="../workers.py" line="1270" />
+            <location filename="../workers.py" line="1267" />
+            <location filename="../workers.py" line="1267" />
             <source>Loading cards from database...</source>
             <translation>데이터베이스에서 카드를 불러오는 중...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1296" />
-            <location filename="../workers.py" line="1296" />
+            <location filename="../workers.py" line="1293" />
+            <location filename="../workers.py" line="1293" />
             <source>Card load cancelled</source>
             <translation>카드 충전 취소됨</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1323" />
-            <location filename="../workers.py" line="1323" />
+            <location filename="../workers.py" line="1320" />
+            <location filename="../workers.py" line="1320" />
             <source>Loaded %1 cards</source>
             <translation>로드된 %1 카드</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1332" />
-            <location filename="../workers.py" line="1332" />
+            <location filename="../workers.py" line="1329" />
+            <location filename="../workers.py" line="1329" />
             <source>Card load failed: %1</source>
             <translation>카드 로드 실패: %1</translation>
         </message>
@@ -397,8 +397,8 @@
     <context>
         <name>DashboardStatsWorker</name>
         <message>
-            <location filename="../workers.py" line="1485" />
-            <location filename="../workers.py" line="1485" />
+            <location filename="../workers.py" line="1482" />
+            <location filename="../workers.py" line="1482" />
             <source>Processed %1 (%2)</source>
             <translation>처리됨 %1 (%2)</translation>
         </message>
@@ -406,38 +406,38 @@
     <context>
         <name>DatabaseBackupWorker</name>
         <message>
-            <location filename="../workers.py" line="1174" />
-            <location filename="../workers.py" line="1174" />
+            <location filename="../workers.py" line="1171" />
+            <location filename="../workers.py" line="1171" />
             <source>Starting database backup...</source>
             <translation>데이터베이스 백업을 시작합니다...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1182" />
-            <location filename="../workers.py" line="1182" />
+            <location filename="../workers.py" line="1179" />
+            <location filename="../workers.py" line="1179" />
             <source>Source database not found: %1</source>
             <translation>원본 데이터베이스를 찾을 수 없습니다: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1197" />
-            <location filename="../workers.py" line="1197" />
+            <location filename="../workers.py" line="1194" />
+            <location filename="../workers.py" line="1194" />
             <source>Database backup cancelled</source>
             <translation>데이터베이스 백업이 취소되었습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1206" />
-            <location filename="../workers.py" line="1206" />
+            <location filename="../workers.py" line="1203" />
+            <location filename="../workers.py" line="1203" />
             <source>Backup progress: %1%</source>
             <translation>백업 진행률: 1%</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1214" />
-            <location filename="../workers.py" line="1214" />
+            <location filename="../workers.py" line="1211" />
+            <location filename="../workers.py" line="1211" />
             <source>Database backup completed successfully</source>
             <translation>데이터베이스 백업이 성공적으로 완료되었습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1228" />
-            <location filename="../workers.py" line="1228" />
+            <location filename="../workers.py" line="1225" />
+            <location filename="../workers.py" line="1225" />
             <source>Database backup failed: %1</source>
             <translation>데이터베이스 백업 실패: %1</translation>
         </message>
@@ -927,140 +927,144 @@
         <message>
             <location filename="../main_window.py" line="1950" />
             <location filename="../main_window.py" line="1950" />
-            <source>No screenshot records found in database. Please import a CSV file first (File -&gt; Import CSV) before processing screenshots.</source>
-            <translation>데이터베이스에서 스크린샷 기록을 찾을 수 없습니다. 스크린샷을 처리하기 전에 먼저 CSV 파일을 가져오세요(파일 -&amp;gt; CSV 가져오기).</translation>
+            <source>No screenshot records found in database. Please import a CSV file first (File -&gt; Import CSV) before processing screenshots. Alternatively, go to File -&gt; Preferences and verify all paths are correct.</source>
+            <translation>데이터베이스에서 스크린샷 기록을 찾을 수 없습니다. 스크린샷을 처리하기 전에 먼저 CSV 파일을 가져오세요(파일 -&amp;gt; CSV 가져오기). 또는 파일 -&amp;gt; 환경설정으로 이동하여 모든 경로가 올바른지 확인하세요.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1956" />
-            <location filename="../main_window.py" line="1956" />
+            <location filename="../main_window.py" line="1957" />
+            <location filename="../main_window.py" line="1957" />
             <source>Aborted screenshot processing: No screenshot records in database</source>
             <translation>스크린샷 처리 중단: 데이터베이스에 스크린샷 기록이 없습니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1965" />
-            <location filename="../main_window.py" line="1965" />
+            <location filename="../main_window.py" line="1966" />
+            <location filename="../main_window.py" line="1966" />
             <source>Error checking card count: %1</source>
             <translation>카드 개수 확인 오류: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1980" />
-            <location filename="../main_window.py" line="1980" />
+            <location filename="../main_window.py" line="1981" />
+            <location filename="../main_window.py" line="1981" />
             <source>Screenshot processing completed</source>
             <translation>스크린샷 처리가 완료되었습니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1982" />
-            <location filename="../main_window.py" line="1982" />
+            <location filename="../main_window.py" line="1983" />
+            <location filename="../main_window.py" line="1983" />
             <source>Screenshot processing cancelled</source>
             <translation>스크린샷 처리가 취소되었습니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1990" />
-            <location filename="../main_window.py" line="1990" />
+            <location filename="../main_window.py" line="1991" />
+            <location filename="../main_window.py" line="1991" />
             <source>Error processing screenshots: %1</source>
             <translation>스크린샷 처리 오류: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1996" />
-            <location filename="../main_window.py" line="1996" />
+            <location filename="../main_window.py" line="1997" />
+            <location filename="../main_window.py" line="1997" />
             <source>Starting background screenshot processing...</source>
             <translation>백그라운드 스크린샷 처리를 시작합니다...</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2005" />
-            <location filename="../main_window.py" line="2005" />
+            <location filename="../main_window.py" line="2006" />
+            <location filename="../main_window.py" line="2006" />
             <source>Screenshot Processing: %1</source>
             <translation>스크린샷 처리 중: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2050" />
-            <location filename="../main_window.py" line="2050" />
+            <location filename="../main_window.py" line="2051" />
+            <location filename="../main_window.py" line="2051" />
             <source>Screenshot processing started in background</source>
             <translation>스크린샷 처리가 백그라운드에서 시작되었습니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2056" />
-            <location filename="../main_window.py" line="2056" />
+            <location filename="../main_window.py" line="2057" />
+            <location filename="../main_window.py" line="2057" />
             <source>Error starting screenshot processing: %1</source>
             <translation>스크린샷 처리 시작 중 오류 발생: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2065" />
-            <location filename="../main_window.py" line="2065" />
+            <location filename="../main_window.py" line="2066" />
+            <location filename="../main_window.py" line="2066" />
             <source>Downloading card art</source>
             <translation>카드 이미지 다운로드</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2082" />
-            <location filename="../main_window.py" line="2082" />
+            <location filename="../main_window.py" line="2083" />
+            <location filename="../main_window.py" line="2083" />
             <source>Card art download complete: %1 images saved</source>
             <translation>카드 디자인 다운로드 완료: 이미지 1개 저장됨</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2089" />
-            <location filename="../main_window.py" line="2089" />
+            <location filename="../main_window.py" line="2090" />
+            <location filename="../main_window.py" line="2090" />
             <source>Card art download complete</source>
             <translation>카드 디자인 다운로드 완료</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2095" />
-            <location filename="../main_window.py" line="2095" />
+            <location filename="../main_window.py" line="2096" />
+            <location filename="../main_window.py" line="2096" />
             <source>Card art download error: %1</source>
             <translation>카드 이미지 다운로드 오류: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2120" />
-            <location filename="../main_window.py" line="2120" />
+            <location filename="../main_window.py" line="2121" />
+            <location filename="../main_window.py" line="2121" />
             <source>Error showing about dialog: %1</source>
             <translation>대화 상자에 표시되는 오류: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2133" />
-            <location filename="../main_window.py" line="2133" />
+            <location filename="../main_window.py" line="2134" />
+            <location filename="../main_window.py" line="2134" />
             <source>Error showing preferences dialog: %1</source>
             <translation>환경설정 대화 상자를 표시하는 데 오류가 발생했습니다: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2271" />
-            <location filename="../main_window.py" line="2271" />
+            <location filename="../main_window.py" line="2272" />
+            <location filename="../main_window.py" line="2272" />
             <source>Closing application. Cleaning up... this may take a moment.</source>
             <translation>애플리케이션을 종료합니다. 정리 작업 중이며 잠시 시간이 걸릴 수 있습니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2368" />
-            <location filename="../main_window.py" line="2368" />
+            <location filename="../main_window.py" line="2369" />
+            <location filename="../main_window.py" line="2369" />
             <source>No Removed Cards</source>
             <translation>제거된 카드 없음</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2368" />
-            <location filename="../main_window.py" line="2368" />
+            <location filename="../main_window.py" line="2369" />
+            <location filename="../main_window.py" line="2369" />
             <source>No cards to process.</source>
             <translation>처리할 카드가 없습니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2373" />
-            <location filename="../main_window.py" line="2373" />
+            <location filename="../main_window.py" line="2374" />
+            <location filename="../main_window.py" line="2374" />
             <source>Process Removed Cards?</source>
             <translation>카드 삭제 처리 중이신가요?</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2375" />
-            <location filename="../main_window.py" line="2375" />
+            <location filename="../main_window.py" line="2376" />
+            <location filename="../main_window.py" line="2376" />
             <source>This will process &lt;b&gt;%1&lt;/b&gt; recorded card removals from the database.&lt;br&gt;&lt;br&gt;This is useful if you have re-imported screenshots that might have brought back cards you previously removed.</source>
             <translation>이렇게 하면 데이터베이스에서 기록된 카드 삭제 건수 &lt;b&gt;1%가&lt;/b&gt; 처리됩니다.&lt;br&gt;&lt;br&gt; 이 기능은 이전에 삭제했던 카드가 다시 나타나는 스크린샷을 다시 가져온 경우에 유용합니다.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2403" />
-            <location filename="../main_window.py" line="2403" />
+            <location filename="../main_window.py" line="2404" />
+            <location filename="../main_window.py" line="2404" />
             <source>Process Complete</source>
             <translation>프로세스 완료</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2404" />
-            <location filename="../main_window.py" line="2404" />
+            <location filename="../main_window.py" line="2405" />
+            <location filename="../main_window.py" line="2405" />
             <source>Processed %1 records. %2 cards were actually found and removed.</source>
             <translation>%1개의 레코드를 처리했습니다. 실제로 %2개의 카드가 발견되어 제거되었습니다.</translation>
+        </message>
+        <message>
+            <source>No screenshot records found in database. Please import a CSV file first (File -&gt; Import CSV) before processing screenshots.</source>
+            <translation type="vanished">데이터베이스에서 스크린샷 기록을 찾을 수 없습니다. 스크린샷을 처리하기 전에 먼저 CSV 파일을 가져오세요(파일 -&amp;gt; CSV 가져오기).</translation>
         </message>
     </context>
     <context>
@@ -1322,110 +1326,110 @@
     <context>
         <name>ScreenshotProcessingWorker</name>
         <message>
-            <location filename="../workers.py" line="618" />
-            <location filename="../workers.py" line="618" />
+            <location filename="../workers.py" line="611" />
+            <location filename="../workers.py" line="611" />
             <source>Starting screenshot processing...</source>
             <translation>스크린샷 처리를 시작합니다...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="626" />
-            <location filename="../workers.py" line="626" />
+            <location filename="../workers.py" line="619" />
+            <location filename="../workers.py" line="619" />
             <source>Directory not found: %1</source>
             <translation>디렉터리를 찾을 수 없습니다: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="640" />
-            <location filename="../workers.py" line="640" />
+            <location filename="../workers.py" line="633" />
+            <location filename="../workers.py" line="633" />
             <source>Scanning directory for images...</source>
             <translation>디렉토리에서 이미지를 검색하는 중...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="680" />
-            <location filename="../workers.py" line="680" />
+            <location filename="../workers.py" line="673" />
+            <location filename="../workers.py" line="673" />
             <source>Scanned %1 files, found %2 new images...</source>
             <translation>%1개의 파일을 스캔했으며, %2개의 새 이미지를 찾았습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="701" />
-            <location filename="../workers.py" line="701" />
+            <location filename="../workers.py" line="694" />
+            <location filename="../workers.py" line="694" />
             <source>Skipped %1 pre-S4T screenshots (total skipped: %2)</source>
             <translation>S4T 이전 스크린샷 1개를 건너뛰었습니다(총 건너뛴 스크린샷 수: 2%).</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="713" />
-            <location filename="../workers.py" line="713" />
+            <location filename="../workers.py" line="706" />
+            <location filename="../workers.py" line="706" />
             <source>All images already processed.</source>
             <translation>모든 이미지가 이미 처리되었습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="728" />
-            <location filename="../workers.py" line="728" />
+            <location filename="../workers.py" line="721" />
+            <location filename="../workers.py" line="721" />
             <source>All images already processed</source>
             <translation>모든 이미지가 이미 처리되었습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="737" />
-            <location filename="../workers.py" line="737" />
+            <location filename="../workers.py" line="730" />
+            <location filename="../workers.py" line="730" />
             <source>No image files found in directory</source>
             <translation>해당 디렉터리에서 이미지 파일을 찾을 수 없습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="744" />
-            <location filename="../workers.py" line="744" />
+            <location filename="../workers.py" line="737" />
+            <location filename="../workers.py" line="737" />
             <source>Found %1 images to process. Loading workers...</source>
             <translation>처리할 이미지가 %1개 발견되었습니다. 작업자를 불러오는 중...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="762" />
-            <location filename="../workers.py" line="762" />
+            <location filename="../workers.py" line="755" />
+            <location filename="../workers.py" line="755" />
             <source>Loaded %1 card templates</source>
             <translation>%1 카드 템플릿이 로드되었습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="768" />
-            <location filename="../workers.py" line="768" />
+            <location filename="../workers.py" line="761" />
+            <location filename="../workers.py" line="761" />
             <source>Error: Template directory not found: %1</source>
             <translation>오류: 템플릿 디렉터리를 찾을 수 없습니다: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="774" />
-            <location filename="../workers.py" line="774" />
+            <location filename="../workers.py" line="767" />
+            <location filename="../workers.py" line="767" />
             <source>Template directory not found: %1</source>
             <translation>템플릿 디렉터리를 찾을 수 없습니다: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="781" />
-            <location filename="../workers.py" line="781" />
+            <location filename="../workers.py" line="774" />
+            <location filename="../workers.py" line="774" />
             <source>Error: Could not load card templates: %1</source>
             <translation>오류: 카드 템플릿을 불러올 수 없습니다: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="880" />
-            <location filename="../workers.py" line="880" />
+            <location filename="../workers.py" line="873" />
+            <location filename="../workers.py" line="873" />
             <source>Screenshot processing cancelled</source>
             <translation>스크린샷 처리가 취소되었습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="896" />
-            <location filename="../workers.py" line="896" />
+            <location filename="../workers.py" line="889" />
+            <location filename="../workers.py" line="889" />
             <source>Critical error processing %1: %2</source>
             <translation>심각한 오류 처리 %1: %2</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="910" />
-            <location filename="../workers.py" line="910" />
+            <location filename="../workers.py" line="903" />
+            <location filename="../workers.py" line="903" />
             <source>Processed %1 of %2 images</source>
             <translation>이미지 2개 중 1개를 처리했습니다.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="928" />
-            <location filename="../workers.py" line="928" />
+            <location filename="../workers.py" line="921" />
+            <location filename="../workers.py" line="921" />
             <source>Successfully processed %1 screenshots (%2 with results)</source>
             <translation>%1개의 스크린샷을 성공적으로 처리했습니다(%2개 결과 포함).</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="949" />
-            <location filename="../workers.py" line="949" />
+            <location filename="../workers.py" line="942" />
+            <location filename="../workers.py" line="942" />
             <source>Screenshot processing failed: %1</source>
             <translation>스크린샷 처리 실패: %1</translation>
         </message>

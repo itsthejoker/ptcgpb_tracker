@@ -355,26 +355,26 @@
     <context>
         <name>CardDataLoadWorker</name>
         <message>
-            <location filename="../workers.py" line="1270" />
-            <location filename="../workers.py" line="1270" />
+            <location filename="../workers.py" line="1267" />
+            <location filename="../workers.py" line="1267" />
             <source>Loading cards from database...</source>
             <translation>Karten werden aus der Datenbank geladen...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1296" />
-            <location filename="../workers.py" line="1296" />
+            <location filename="../workers.py" line="1293" />
+            <location filename="../workers.py" line="1293" />
             <source>Card load cancelled</source>
             <translation>Das Laden der Karte wurde abgebrochen</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1323" />
-            <location filename="../workers.py" line="1323" />
+            <location filename="../workers.py" line="1320" />
+            <location filename="../workers.py" line="1320" />
             <source>Loaded %1 cards</source>
             <translation>%1 Karten geladen</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1332" />
-            <location filename="../workers.py" line="1332" />
+            <location filename="../workers.py" line="1329" />
+            <location filename="../workers.py" line="1329" />
             <source>Card load failed: %1</source>
             <translation>Das Laden der Karte ist fehlgeschlagen: %1</translation>
         </message>
@@ -397,8 +397,8 @@
     <context>
         <name>DashboardStatsWorker</name>
         <message>
-            <location filename="../workers.py" line="1485" />
-            <location filename="../workers.py" line="1485" />
+            <location filename="../workers.py" line="1482" />
+            <location filename="../workers.py" line="1482" />
             <source>Processed %1 (%2)</source>
             <translation>Verarbeitet %1 (%2)</translation>
         </message>
@@ -406,38 +406,38 @@
     <context>
         <name>DatabaseBackupWorker</name>
         <message>
-            <location filename="../workers.py" line="1174" />
-            <location filename="../workers.py" line="1174" />
+            <location filename="../workers.py" line="1171" />
+            <location filename="../workers.py" line="1171" />
             <source>Starting database backup...</source>
             <translation>Datenbanksicherung wird gestartet...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1182" />
-            <location filename="../workers.py" line="1182" />
+            <location filename="../workers.py" line="1179" />
+            <location filename="../workers.py" line="1179" />
             <source>Source database not found: %1</source>
             <translation>Quelldatenbank nicht gefunden: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1197" />
-            <location filename="../workers.py" line="1197" />
+            <location filename="../workers.py" line="1194" />
+            <location filename="../workers.py" line="1194" />
             <source>Database backup cancelled</source>
             <translation>Datenbanksicherung abgebrochen</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1206" />
-            <location filename="../workers.py" line="1206" />
+            <location filename="../workers.py" line="1203" />
+            <location filename="../workers.py" line="1203" />
             <source>Backup progress: %1%</source>
             <translation>Sicherungsfortschritt: %1%</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1214" />
-            <location filename="../workers.py" line="1214" />
+            <location filename="../workers.py" line="1211" />
+            <location filename="../workers.py" line="1211" />
             <source>Database backup completed successfully</source>
             <translation>Datenbanksicherung erfolgreich abgeschlossen</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="1228" />
-            <location filename="../workers.py" line="1228" />
+            <location filename="../workers.py" line="1225" />
+            <location filename="../workers.py" line="1225" />
             <source>Database backup failed: %1</source>
             <translation>Datenbanksicherung fehlgeschlagen: %1</translation>
         </message>
@@ -927,140 +927,144 @@
         <message>
             <location filename="../main_window.py" line="1950" />
             <location filename="../main_window.py" line="1950" />
-            <source>No screenshot records found in database. Please import a CSV file first (File -&gt; Import CSV) before processing screenshots.</source>
-            <translation>In der Datenbank wurden keine Screenshot-Datensätze gefunden. Bitte importieren Sie zunächst eine CSV-Datei (Datei -&gt; CSV importieren), bevor Sie Screenshots verarbeiten.</translation>
+            <source>No screenshot records found in database. Please import a CSV file first (File -&gt; Import CSV) before processing screenshots. Alternatively, go to File -&gt; Preferences and verify all paths are correct.</source>
+            <translation>Es wurden keine Screenshot-Datensätze in der Datenbank gefunden. Bitte importieren Sie zuerst eine CSV-Datei (Datei → CSV importieren), bevor Sie die Screenshots verarbeiten. Alternativ können Sie unter Datei → Einstellungen alle Pfade überprüfen.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1956" />
-            <location filename="../main_window.py" line="1956" />
+            <location filename="../main_window.py" line="1957" />
+            <location filename="../main_window.py" line="1957" />
             <source>Aborted screenshot processing: No screenshot records in database</source>
             <translation>Screenshot-Verarbeitung abgebrochen: Keine Screenshot-Datensätze in der Datenbank</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1965" />
-            <location filename="../main_window.py" line="1965" />
+            <location filename="../main_window.py" line="1966" />
+            <location filename="../main_window.py" line="1966" />
             <source>Error checking card count: %1</source>
             <translation>Fehler beim Überprüfen der Kartenanzahl: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1980" />
-            <location filename="../main_window.py" line="1980" />
+            <location filename="../main_window.py" line="1981" />
+            <location filename="../main_window.py" line="1981" />
             <source>Screenshot processing completed</source>
             <translation>Screenshot-Verarbeitung abgeschlossen</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1982" />
-            <location filename="../main_window.py" line="1982" />
+            <location filename="../main_window.py" line="1983" />
+            <location filename="../main_window.py" line="1983" />
             <source>Screenshot processing cancelled</source>
             <translation>Screenshot-Verarbeitung abgebrochen</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1990" />
-            <location filename="../main_window.py" line="1990" />
+            <location filename="../main_window.py" line="1991" />
+            <location filename="../main_window.py" line="1991" />
             <source>Error processing screenshots: %1</source>
             <translation>Fehler beim Verarbeiten der Screenshots: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="1996" />
-            <location filename="../main_window.py" line="1996" />
+            <location filename="../main_window.py" line="1997" />
+            <location filename="../main_window.py" line="1997" />
             <source>Starting background screenshot processing...</source>
             <translation>Die Verarbeitung des Screenshots im Hintergrund wird gestartet...</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2005" />
-            <location filename="../main_window.py" line="2005" />
+            <location filename="../main_window.py" line="2006" />
+            <location filename="../main_window.py" line="2006" />
             <source>Screenshot Processing: %1</source>
             <translation>Screenshot-Verarbeitung: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2050" />
-            <location filename="../main_window.py" line="2050" />
+            <location filename="../main_window.py" line="2051" />
+            <location filename="../main_window.py" line="2051" />
             <source>Screenshot processing started in background</source>
             <translation>Die Screenshot-Verarbeitung wurde im Hintergrund gestartet</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2056" />
-            <location filename="../main_window.py" line="2056" />
+            <location filename="../main_window.py" line="2057" />
+            <location filename="../main_window.py" line="2057" />
             <source>Error starting screenshot processing: %1</source>
             <translation>Fehler beim Starten der Screenshot-Verarbeitung: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2065" />
-            <location filename="../main_window.py" line="2065" />
+            <location filename="../main_window.py" line="2066" />
+            <location filename="../main_window.py" line="2066" />
             <source>Downloading card art</source>
             <translation>Kartenkunst herunterladen</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2082" />
-            <location filename="../main_window.py" line="2082" />
+            <location filename="../main_window.py" line="2083" />
+            <location filename="../main_window.py" line="2083" />
             <source>Card art download complete: %1 images saved</source>
             <translation>Download der Kartengrafik abgeschlossen: %1 Bilder gespeichert</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2089" />
-            <location filename="../main_window.py" line="2089" />
+            <location filename="../main_window.py" line="2090" />
+            <location filename="../main_window.py" line="2090" />
             <source>Card art download complete</source>
             <translation>Der Download der Kartenkunst ist abgeschlossen</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2095" />
-            <location filename="../main_window.py" line="2095" />
+            <location filename="../main_window.py" line="2096" />
+            <location filename="../main_window.py" line="2096" />
             <source>Card art download error: %1</source>
             <translation>Fehler beim Herunterladen der Kartengrafik: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2120" />
-            <location filename="../main_window.py" line="2120" />
+            <location filename="../main_window.py" line="2121" />
+            <location filename="../main_window.py" line="2121" />
             <source>Error showing about dialog: %1</source>
             <translation>Fehler beim Anzeigen des Dialogs: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2133" />
-            <location filename="../main_window.py" line="2133" />
+            <location filename="../main_window.py" line="2134" />
+            <location filename="../main_window.py" line="2134" />
             <source>Error showing preferences dialog: %1</source>
             <translation>Fehler beim Anzeigen des Einstellungsdialogs: %1</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2271" />
-            <location filename="../main_window.py" line="2271" />
+            <location filename="../main_window.py" line="2272" />
+            <location filename="../main_window.py" line="2272" />
             <source>Closing application. Cleaning up... this may take a moment.</source>
             <translation>Abschlussantrag. Aufräumen... das kann einen Moment dauern.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2368" />
-            <location filename="../main_window.py" line="2368" />
+            <location filename="../main_window.py" line="2369" />
+            <location filename="../main_window.py" line="2369" />
             <source>No Removed Cards</source>
             <translation>Keine entfernten Karten</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2368" />
-            <location filename="../main_window.py" line="2368" />
+            <location filename="../main_window.py" line="2369" />
+            <location filename="../main_window.py" line="2369" />
             <source>No cards to process.</source>
             <translation>Keine Karten zum Verarbeiten.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2373" />
-            <location filename="../main_window.py" line="2373" />
+            <location filename="../main_window.py" line="2374" />
+            <location filename="../main_window.py" line="2374" />
             <source>Process Removed Cards?</source>
             <translation>Entfernte Karten bearbeiten?</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2375" />
-            <location filename="../main_window.py" line="2375" />
+            <location filename="../main_window.py" line="2376" />
+            <location filename="../main_window.py" line="2376" />
             <source>This will process &lt;b&gt;%1&lt;/b&gt; recorded card removals from the database.&lt;br&gt;&lt;br&gt;This is useful if you have re-imported screenshots that might have brought back cards you previously removed.</source>
             <translation>Dadurch werden &lt;b&gt;%1&lt;/b&gt; aufgezeichnete Kartenentfernungen aus der Datenbank verarbeitet.&lt;br&gt;&lt;br&gt;Dies ist nützlich, wenn Sie Screenshots erneut importiert haben, die möglicherweise zuvor entfernte Karten zurückgebracht haben.</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2403" />
-            <location filename="../main_window.py" line="2403" />
+            <location filename="../main_window.py" line="2404" />
+            <location filename="../main_window.py" line="2404" />
             <source>Process Complete</source>
             <translation>Prozess abgeschlossen</translation>
         </message>
         <message>
-            <location filename="../main_window.py" line="2404" />
-            <location filename="../main_window.py" line="2404" />
+            <location filename="../main_window.py" line="2405" />
+            <location filename="../main_window.py" line="2405" />
             <source>Processed %1 records. %2 cards were actually found and removed.</source>
             <translation>%1 Datensätze wurden verarbeitet. %2 Karten wurden tatsächlich gefunden und entfernt.</translation>
+        </message>
+        <message>
+            <source>No screenshot records found in database. Please import a CSV file first (File -&gt; Import CSV) before processing screenshots.</source>
+            <translation type="vanished">In der Datenbank wurden keine Screenshot-Datensätze gefunden. Bitte importieren Sie zunächst eine CSV-Datei (Datei -&gt; CSV importieren), bevor Sie Screenshots verarbeiten.</translation>
         </message>
     </context>
     <context>
@@ -1322,110 +1326,110 @@
     <context>
         <name>ScreenshotProcessingWorker</name>
         <message>
-            <location filename="../workers.py" line="618" />
-            <location filename="../workers.py" line="618" />
+            <location filename="../workers.py" line="611" />
+            <location filename="../workers.py" line="611" />
             <source>Starting screenshot processing...</source>
             <translation>Screenshot-Verarbeitung wird gestartet...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="626" />
-            <location filename="../workers.py" line="626" />
+            <location filename="../workers.py" line="619" />
+            <location filename="../workers.py" line="619" />
             <source>Directory not found: %1</source>
             <translation>Verzeichnis nicht gefunden: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="640" />
-            <location filename="../workers.py" line="640" />
+            <location filename="../workers.py" line="633" />
+            <location filename="../workers.py" line="633" />
             <source>Scanning directory for images...</source>
             <translation>Verzeichnis nach Bildern durchsuchen...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="680" />
-            <location filename="../workers.py" line="680" />
+            <location filename="../workers.py" line="673" />
+            <location filename="../workers.py" line="673" />
             <source>Scanned %1 files, found %2 new images...</source>
             <translation>%1 Dateien gescannt, %2 neue Bilder gefunden...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="701" />
-            <location filename="../workers.py" line="701" />
+            <location filename="../workers.py" line="694" />
+            <location filename="../workers.py" line="694" />
             <source>Skipped %1 pre-S4T screenshots (total skipped: %2)</source>
             <translation>Vor-S4T-Screenshots wurden 1 % übersprungen (insgesamt 2 % übersprungen).</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="713" />
-            <location filename="../workers.py" line="713" />
+            <location filename="../workers.py" line="706" />
+            <location filename="../workers.py" line="706" />
             <source>All images already processed.</source>
             <translation>Alle Bilder bereits verarbeitet.</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="728" />
-            <location filename="../workers.py" line="728" />
+            <location filename="../workers.py" line="721" />
+            <location filename="../workers.py" line="721" />
             <source>All images already processed</source>
             <translation>Alle Bilder bereits verarbeitet</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="737" />
-            <location filename="../workers.py" line="737" />
+            <location filename="../workers.py" line="730" />
+            <location filename="../workers.py" line="730" />
             <source>No image files found in directory</source>
             <translation>Keine Bilddateien im Verzeichnis gefunden</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="744" />
-            <location filename="../workers.py" line="744" />
+            <location filename="../workers.py" line="737" />
+            <location filename="../workers.py" line="737" />
             <source>Found %1 images to process. Loading workers...</source>
             <translation>%1 Bilder zur Verarbeitung gefunden. Arbeiter werden geladen...</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="762" />
-            <location filename="../workers.py" line="762" />
+            <location filename="../workers.py" line="755" />
+            <location filename="../workers.py" line="755" />
             <source>Loaded %1 card templates</source>
             <translation>%1 Kartenvorlagen wurden geladen</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="768" />
-            <location filename="../workers.py" line="768" />
+            <location filename="../workers.py" line="761" />
+            <location filename="../workers.py" line="761" />
             <source>Error: Template directory not found: %1</source>
             <translation>Fehler: Vorlagenverzeichnis nicht gefunden: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="774" />
-            <location filename="../workers.py" line="774" />
+            <location filename="../workers.py" line="767" />
+            <location filename="../workers.py" line="767" />
             <source>Template directory not found: %1</source>
             <translation>Vorlagenverzeichnis nicht gefunden: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="781" />
-            <location filename="../workers.py" line="781" />
+            <location filename="../workers.py" line="774" />
+            <location filename="../workers.py" line="774" />
             <source>Error: Could not load card templates: %1</source>
             <translation>Fehler: Kartenvorlagen konnten nicht geladen werden: %1</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="880" />
-            <location filename="../workers.py" line="880" />
+            <location filename="../workers.py" line="873" />
+            <location filename="../workers.py" line="873" />
             <source>Screenshot processing cancelled</source>
             <translation>Screenshot-Verarbeitung abgebrochen</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="896" />
-            <location filename="../workers.py" line="896" />
+            <location filename="../workers.py" line="889" />
+            <location filename="../workers.py" line="889" />
             <source>Critical error processing %1: %2</source>
             <translation>Kritischer Fehler bei der Verarbeitung von %1: %2</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="910" />
-            <location filename="../workers.py" line="910" />
+            <location filename="../workers.py" line="903" />
+            <location filename="../workers.py" line="903" />
             <source>Processed %1 of %2 images</source>
             <translation>%1 von %2 Bildern verarbeitet</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="928" />
-            <location filename="../workers.py" line="928" />
+            <location filename="../workers.py" line="921" />
+            <location filename="../workers.py" line="921" />
             <source>Successfully processed %1 screenshots (%2 with results)</source>
             <translation>%1 Screenshots erfolgreich verarbeitet (%2 mit Ergebnissen)</translation>
         </message>
         <message>
-            <location filename="../workers.py" line="949" />
-            <location filename="../workers.py" line="949" />
+            <location filename="../workers.py" line="942" />
+            <location filename="../workers.py" line="942" />
             <source>Screenshot processing failed: %1</source>
             <translation>Screenshot-Verarbeitung fehlgeschlagen: %1</translation>
         </message>

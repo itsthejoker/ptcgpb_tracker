@@ -128,7 +128,7 @@ class CSVImportWorker(QRunnable):
 
             # Process in batches to avoid holding a transaction for too long
             # and to allow other threads to write to the database.
-            batch_size = 100
+            batch_size = 150
             for i in range(0, total_rows, batch_size):
                 if self._is_cancelled:
                     break
@@ -601,14 +601,7 @@ class ScreenshotProcessingWorker(QRunnable):
 
     def run(self):
         """Process screenshot images in background thread"""
-        from app.db.models import (
-            Screenshot,
-            Card,
-            ScreenshotCard,
-            Account,
-            CardSet,
-            translate_set_name,
-        )
+        from app.db.models import Screenshot
 
         try:
             if self._is_cancelled:
@@ -643,7 +636,7 @@ class ScreenshotProcessingWorker(QRunnable):
             )
 
             batch = []
-            batch_size = 500
+            batch_size = 1000
 
             with os.scandir(self.directory_path) as it:
                 for entry in it:
@@ -988,7 +981,8 @@ class ScreenshotProcessingWorker(QRunnable):
             return "Unknown"
 
         try:
-            from app.names import sets
+            from app.db.models import CardSet
+            sets = CardSet.name_map()
 
             # Count occurrences of each set code
             set_counts = {}
@@ -1021,7 +1015,6 @@ class ScreenshotProcessingWorker(QRunnable):
             Screenshot,
             Card,
             ScreenshotCard,
-            Account,
             CardSet,
             translate_set_name,
         )
@@ -1069,6 +1062,7 @@ class ScreenshotProcessingWorker(QRunnable):
                     ScreenshotCard.objects.filter(screenshot=screenshot_obj).delete()
 
                     # Add each card to database and create relationships
+                    screenshot_cards = []
                     for card_data in cards_found:
                         # Extract card code if available
                         card_code = card_data.get("card_code", "")
@@ -1111,18 +1105,21 @@ class ScreenshotProcessingWorker(QRunnable):
                             card_obj.save()
 
                         # Add relationship between screenshot and card
-                        ScreenshotCard.objects.create(
-                            screenshot=screenshot_obj,
-                            card=card_obj,
-                            position=card_data.get("position", 1),
-                            confidence=card_data.get("confidence", 0.0),
+                        screenshot_cards.append(
+                            ScreenshotCard(
+                                screenshot=screenshot_obj,
+                                card=card_obj,
+                                position=card_data.get("position", 1),
+                                confidence=card_data.get("confidence", 0.0),
+                            )
                         )
 
                         # Log the card detection
-                        logger.info(
+                        logger.debug(
                             f"Stored card {card_name} ({card_set}) with confidence {card_data.get('confidence', 0.0):.2f}"
                         )
 
+                    ScreenshotCard.objects.bulk_create(screenshot_cards)
                     # Mark screenshot as processed
                     screenshot_obj.processed = True
                     screenshot_obj.save()

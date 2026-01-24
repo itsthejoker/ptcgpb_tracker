@@ -1949,7 +1949,8 @@ class MainWindow(QMainWindow):
                     self.tr("Missing Screenshot Data"),
                     self.tr(
                         "No screenshot records found in database. Please import a CSV file first (File -> Import CSV) "
-                        "before processing screenshots."
+                        "before processing screenshots. Alternatively, go to File -> Preferences and verify all paths "
+                        "are correct."
                     ),
                 )
                 self._update_status_message(

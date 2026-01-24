@@ -80,9 +80,13 @@ def setup_logging():
         if not os.path.exists(log_file):
             with open(log_file, "a", encoding="utf-8"):
                 pass
-        handlers = [logging.FileHandler(log_file, encoding="utf-8")]
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)
+        handlers = [file_handler]
         if sys.stderr is not None:
-            handlers.append(logging.StreamHandler())
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+            handlers.append(console_handler)
     except Exception as e:
         handlers = []
         if sys.stderr is not None:
@@ -90,10 +94,12 @@ def setup_logging():
                 f"Warning: Could not initialize file logging at {log_file}: {e}",
                 file=sys.stderr,
             )
-            handlers.append(logging.StreamHandler())
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+            handlers.append(console_handler)
 
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format="%(asctime)s - [%(threadName)s] - %(name)s - %(levelname)s - %(message)s",
         handlers=handlers,
     )
