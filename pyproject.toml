@@ -1,6 +1,6 @@
 [project]
 name = "ptcgpb-companion"
-version = "1.2.0"
+version = "1.3.0"
 description = "Companion app for PTCGPB that lets you see what card is in what account."
 readme = "README.md"
 requires-python = ">=3.12"
