@@ -1207,7 +1207,7 @@
             <location filename="../dialogs.py" line="589" />
             <location filename="../dialogs.py" line="589" />
             <source>The language change will take effect after you restart the application.</source>
-            <translation>Le changement de langue prendra effet après le redémarrage de l&amp;#39;application.</translation>
+            <translation>Le changement de langue prendra effet après le redémarrage de l'application.</translation>
         </message>
     </context>
     <context>

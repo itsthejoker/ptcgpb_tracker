@@ -556,13 +556,13 @@
             <location filename="../main_window.py" line="504" />
             <location filename="../main_window.py" line="504" />
             <source>Clear</source>
-            <translation>Chiaro</translation>
+            <translation>Pulisci</translation>
         </message>
         <message>
             <location filename="../main_window.py" line="519" />
             <location filename="../main_window.py" line="519" />
             <source>Dashboard</source>
-            <translation>Cruscotto</translation>
+            <translation>Dashboard</translation>
         </message>
         <message>
             <location filename="../main_window.py" line="550" />
