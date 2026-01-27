@@ -13,11 +13,10 @@ import csv
 import time
 import logging
 import threading
-import operator
-from functools import reduce
 
 
 from django.db.models import Count, Q
+from django.db.models.functions import Lower
 
 from app.utils import (
     PortableSettings,
@@ -128,7 +127,7 @@ class CSVImportWorker(QRunnable):
 
             # Process in batches to avoid holding a transaction for too long
             # and to allow other threads to write to the database.
-            batch_size = 150
+            batch_size = 500
             for i in range(0, total_rows, batch_size):
                 if self._is_cancelled:
                     break
@@ -153,9 +152,15 @@ class CSVImportWorker(QRunnable):
                         still_missing = missing_account_names - set(
                             accounts_cache.keys()
                         )
-                        for name in still_missing:
-                            acc, _ = Account.objects.get_or_create(name=name)
-                            accounts_cache[name] = acc
+                        if still_missing:
+                            Account.objects.bulk_create(
+                                [Account(name=name) for name in still_missing],
+                                ignore_conflicts=True,
+                            )
+                            for acc in Account.objects.filter(
+                                name__in=still_missing
+                            ):
+                                accounts_cache[acc.name] = acc
 
                     # Pre-fetch existing screenshots for this batch
                     batch_screenshot_names = {
@@ -167,16 +172,19 @@ class CSVImportWorker(QRunnable):
                     # Case-insensitive lookup for existing screenshots
                     existing_screenshots = {}
                     if batch_screenshot_names:
-                        q_objs = reduce(
-                            operator.or_,
-                            [Q(name__iexact=name) for name in batch_screenshot_names],
-                        )
-                        for s in Screenshot.objects.filter(q_objs):
+                        batch_screenshot_names_lower = {
+                            name.lower() for name in batch_screenshot_names
+                        }
+                        for s in Screenshot.objects.annotate(
+                            lower_name=Lower("name")
+                        ).filter(lower_name__in=batch_screenshot_names_lower):
                             existing_screenshots[s.name.lower()] = s
 
                     to_create = []
                     to_update = []
                     seen_in_batch = set()
+
+                    shinedust_updates = {}
 
                     for row in batch:
                         if self._is_cancelled:
@@ -197,9 +205,10 @@ class CSVImportWorker(QRunnable):
                             # This is a summary row (Shinedust only)
                             if row.get("Shinedust") and account_obj:
                                 # Only update if it actually changed to save a query
-                                if account_obj.shinedust != str(row["Shinedust"]):
-                                    account_obj.shinedust = str(row["Shinedust"])
-                                    account_obj.save(update_fields=["shinedust"])
+                                shinedust_value = str(row["Shinedust"])
+                                if account_obj.shinedust != shinedust_value:
+                                    account_obj.shinedust = shinedust_value
+                                    shinedust_updates[account_obj.pk] = account_obj
                             continue
 
                         try:
@@ -263,6 +272,10 @@ class CSVImportWorker(QRunnable):
                     if to_update:
                         Screenshot.objects.bulk_update(
                             to_update, ["timestamp", "account", "set"]
+                        )
+                    if shinedust_updates:
+                        Account.objects.bulk_update(
+                            list(shinedust_updates.values()), ["shinedust"]
                         )
 
                 # Update progress after each batch
