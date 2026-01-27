@@ -835,6 +835,9 @@ class AccountCardListDialog(QDialog):
 
         # Close button
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        copy_button = QPushButton(self.tr("Copy all to clipboard"))
+        copy_button.clicked.connect(self._copy_all_accounts)
+        button_box.addButton(copy_button, QDialogButtonBox.ButtonRole.ActionRole)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
 
@@ -1088,6 +1091,12 @@ class AccountCardListDialog(QDialog):
                     self.tr("Error"),
                     self.tr("Could not find card in database to remove."),
                 )
+
+    def _copy_all_accounts(self):
+        """Copy unique account names to clipboard"""
+        account_names = {str(item[0]) for item in self.all_data}
+        accounts_text = "\n".join(sorted(account_names))
+        QApplication.clipboard().setText(accounts_text)
 
     def _filter_data(self, text):
         """Filter table data based on search text"""
