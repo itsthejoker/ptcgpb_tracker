@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from django.db import models
 
@@ -67,6 +68,38 @@ def translate_set_name(set_name):
         "Parade": "B2",
     }
     return ptcgpb_names.get(set_name, None)
+
+
+def fix_code_named_cards(logger=None):
+    if logger is None:
+        logger = logging.getLogger(__name__)
+
+    from django.db.models import F
+    from app.names import cards as CARD_NAMES_MAP
+
+    code_named_cards = (
+        Card.objects.filter(name=F("code"))
+        .exclude(code__isnull=True)
+        .exclude(code__exact="")
+    )
+    if not code_named_cards.exists():
+        return 0
+
+    logger.info(
+        f"Fixing {code_named_cards.count()} card records with code-based names..."
+    )
+    fixed_count = 0
+    for card in code_named_cards:
+        mapped_name = CARD_NAMES_MAP.get(card.code)
+        if not mapped_name or mapped_name == card.code:
+            continue
+        card.name = mapped_name
+        card.save()
+        fixed_count += 1
+
+    if fixed_count:
+        logger.info(f"Updated {fixed_count} card names from names.py.")
+    return fixed_count
 
 
 class Screenshot(models.Model):

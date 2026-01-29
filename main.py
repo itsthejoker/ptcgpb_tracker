@@ -165,7 +165,7 @@ def main():
         logger.info("Database migrations completed successfully")
 
         # One-time fix for card names and rarities
-        from app.db.models import Card
+        from app.db.models import Card, fix_code_named_cards
 
         cards_to_fix = Card.objects.filter(name__contains="(")
         if cards_to_fix.exists():
@@ -173,6 +173,8 @@ def main():
             for card in cards_to_fix:
                 card.save()
             logger.info("Card records fixed.")
+
+        fix_code_named_cards(logger)
     except Exception as e:
         logger.error(f"Database migration failed: {e}")
         sys.exit(1)
